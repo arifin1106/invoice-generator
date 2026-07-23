@@ -132,7 +132,8 @@ body {
             'webp'        => 'image/webp',
             default       => 'image/png',
         };
-        $data = file_get_contents($absPath);
+        if (!file_exists($absPath)) return '';
+        $data = @file_get_contents($absPath);
         return $data ? 'data:' . $mime . ';base64,' . base64_encode($data) : '';
     };
 
