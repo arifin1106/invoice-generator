@@ -143,14 +143,22 @@ class InvoiceController extends Controller
 
     public function downloadPdf(Invoice $invoice)
     {
-        $invoice->load('items');
-        $setting = Setting::first();
+        try {
+            $invoice->load('items');
+            $setting = Setting::first();
 
-        $pdf = Pdf::loadView('invoice-pdf', compact('invoice', 'setting'))
-            ->setPaper('a4', 'portrait');
+            $pdf = Pdf::loadView('invoice-pdf', compact('invoice', 'setting'))
+                ->setPaper('a4', 'portrait');
 
-        $filename = 'Invoice-' . str_replace('/', '-', $invoice->invoice_number) . '.pdf';
-        return $pdf->download($filename);
+            $filename = 'Invoice-' . str_replace('/', '-', $invoice->invoice_number) . '.pdf';
+            return $pdf->download($filename);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'PDF Error: ' . $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
+        }
     }
 
     public function generateNumber(): JsonResponse
