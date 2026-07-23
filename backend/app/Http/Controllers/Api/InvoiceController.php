@@ -169,7 +169,7 @@ class InvoiceController extends Controller
                         ->whereMonth('created_at', $month)
                         ->count() + 1;
 
-        $number = sprintf('%02d/JCS/INV/%s/%s', $count, $romanMonth[$month], $year);
+        $number = sprintf('%02d/JACOS/INV/%s/%s', $count, $romanMonth[$month], $year);
 
         return response()->json(['invoice_number' => $number]);
     }

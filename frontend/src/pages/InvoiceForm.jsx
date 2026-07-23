@@ -84,7 +84,11 @@ export default function InvoiceForm() {
       setTimeout(() => navigate(`/invoices/${res.data.id}/preview`), 800);
     },
     onError: (err) => {
-      const msg = err.response?.data?.message ?? 'Gagal menyimpan invoice.';
+      let msg = err.response?.data?.message ?? 'Gagal menyimpan invoice.';
+      if (err.response?.data?.errors) {
+        const firstError = Object.values(err.response.data.errors)[0][0];
+        if (firstError) msg = firstError;
+      }
       showToast(msg, 'error');
     },
   });
