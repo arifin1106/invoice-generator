@@ -68,6 +68,14 @@ export default function InvoiceForm() {
     }
   };
 
+  // Fetch initial number if creating new invoice
+  useEffect(() => {
+    if (!isEdit) {
+      handleGenerateNumber();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit]);
+
   // Auto-calculate totals
   const watchedItems = watch('items');
   const total        = watchedItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
