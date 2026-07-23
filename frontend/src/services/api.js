@@ -25,10 +25,10 @@ export const invoiceApi = {
   update:         (id, data) => api.put(`/invoices/${id}`, data),
   remove:         (id)     => api.delete(`/invoices/${id}`),
   generateNumber: ()       => api.get('/invoices/generate-number'),
-  pdfUrl:         (id)     => `http://localhost:8000/api/invoices/${id}/pdf`,
+  pdfUrl:         (id)     => `${api.defaults.baseURL}/invoices/${id}/pdf`,
   downloadPdf: async (id, invoiceNumber) => {
     const response = await axios.get(
-      `http://localhost:8000/api/invoices/${id}/pdf`,
+      `${api.defaults.baseURL}/invoices/${id}/pdf`,
       { responseType: 'blob' }
     );
     const blob = new Blob([response.data], { type: 'application/pdf' });
