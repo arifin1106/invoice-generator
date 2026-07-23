@@ -179,7 +179,9 @@ body {
 
     {{-- RIGHT: logo + invoice meta --}}
     <td style="vertical-align:top; width:40%; text-align:right;">
-      <img src="{{ $logoSrc }}" class="logo-img" alt="">
+      @if($logoSrc)
+        <img src="{{ $logoSrc }}" class="logo-img" alt="">
+      @endif
       <br>
       <table style="width:100%; border-collapse:collapse; margin-top:4px;">
         <tr>
@@ -332,7 +334,9 @@ body {
     {{-- Logo + Signature --}}
     <td style="vertical-align:bottom; text-align:center;">
       <div class="sig-wrap">
-        <img src="{{ $logoSrc }}" class="sig-img" alt="">
+        @if($sigSrc)
+          <img src="{{ $sigSrc }}" class="sig-img" alt="">
+        @endif
         <div class="sig-line"></div>
         <div class="sig-name">{{ $setting->signer_name ?? 'RR Ratih Retno Sari, S.P' }}</div>
         <div class="sig-ttl">{{ $setting->signer_title ?? 'Finance Manager' }}</div>
