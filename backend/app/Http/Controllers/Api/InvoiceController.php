@@ -152,7 +152,7 @@ class InvoiceController extends Controller
 
             $filename = 'Invoice-' . str_replace('/', '-', $invoice->invoice_number) . '.pdf';
             return $pdf->download($filename);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'PDF Error: ' . $e->getMessage(),
                 'file' => $e->getFile(),
