@@ -143,7 +143,7 @@ body {
         $logoSrc = $toBase64(storage_path('app/public/' . $setting->institution_logo));
     }
     if (!$logoSrc) {
-        $logoSrc = $toBase64(base_path('../asset/logo-JACOS.png'));
+        $logoSrc = $toBase64(public_path('asset/logo-JACOS.png'));
     }
 
     /* Signature */
@@ -152,7 +152,7 @@ body {
         $sigSrc = $toBase64(storage_path('app/public/' . $setting->signer_signature));
     }
     if (!$sigSrc) {
-        $sigSrc = $toBase64(base_path('../asset/ttd-ratih.png'));
+        $sigSrc = $toBase64(public_path('asset/ttd-ratih.png'));
     }
 
     $hasNote = !empty(trim($invoice->notes ?? '')) || !empty(trim($setting?->payment_message ?? ''));
