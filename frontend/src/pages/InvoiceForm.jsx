@@ -77,15 +77,17 @@ export default function InvoiceForm() {
   }, [isEdit]);
 
   // Auto-calculate totals
-  const watchedItems = watch('items');
+  const watchedItems = watch('items') || [];
   const total        = watchedItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
-  const received     = parseFloat(watch('amount_received')) || 0;
+  const received     = watchedItems.reduce((s, i) => s + (i.status === 'Lunas' ? (parseFloat(i.amount) || 0) : 0), 0);
   const remaining    = total - received;
 
   // Mutations
   const mutation = useMutation({
-    mutationFn: (data) =>
-      isEdit ? invoiceApi.update(id, data) : invoiceApi.create(data),
+    mutationFn: (data) => {
+      data.amount_received = received;
+      return isEdit ? invoiceApi.update(id, data) : invoiceApi.create(data);
+    },
     onSuccess: (res) => {
       qc.invalidateQueries(['invoices']);
       showToast('Invoice berhasil disimpan!', 'success');
@@ -278,8 +280,8 @@ export default function InvoiceForm() {
                   <input
                     type="number"
                     className="form-input text-right amount-input"
-                    min="0"
-                    {...register('amount_received')}
+                    value={received}
+                    disabled
                   />
                 </div>
               </div>
