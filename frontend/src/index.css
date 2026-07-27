@@ -851,3 +851,126 @@ body {
   .page { padding: 0; }
   .a4-sheet { box-shadow: none; margin: 0; width: 100%; }
 }
+
+/* ──────────────────────────────────────────────────────── */
+/*  RESPONSIVE (TABLET & MOBILE)                            */
+/* ──────────────────────────────────────────────────────── */
+
+/* Tablet (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile (max-width: 768px) */
+@media (max-width: 768px) {
+  .app-shell {
+    flex-direction: column;
+  }
+  
+  /* Sidebar as Header */
+  .sidebar {
+    position: sticky;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+  }
+  
+  .sidebar-brand {
+    padding: 0;
+    border: none;
+  }
+  .brand-text {
+    display: none;
+  }
+  
+  .sidebar-nav {
+    flex-direction: row;
+    gap: 12px;
+    padding: 0;
+  }
+  .nav-item {
+    padding: 8px;
+  }
+  .nav-item span {
+    display: none;
+  }
+  
+  .sidebar-footer {
+    padding: 0;
+    border: none;
+    margin: 0;
+  }
+  .sidebar-footer span {
+    display: none;
+  }
+  .sidebar-footer .btn {
+    padding: 8px 12px;
+    width: auto;
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .page {
+    padding: 16px;
+  }
+  
+  /* Dashboard & Forms */
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-select {
+    width: 100%;
+  }
+  
+  .form-grid-2,
+  .form-row-2 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  /* Table Overflow */
+  .table-card {
+    overflow-x: auto;
+  }
+  .data-table {
+    min-width: 800px; /* force scroll if screen is smaller */
+  }
+  
+  /* Preview A4 on Mobile */
+  .preview-page {
+    overflow-x: auto;
+    padding-bottom: 30px;
+  }
+  .a4-sheet {
+    margin: 0 auto;
+  }
+  
+  .preview-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .preview-action-right {
+    flex-direction: column;
+    width: 100%;
+  }
+  .preview-action-right button,
+  .preview-action-right a {
+    width: 100%;
+    justify-content: center;
+  }
+}
