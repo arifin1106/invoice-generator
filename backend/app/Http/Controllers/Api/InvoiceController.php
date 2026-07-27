@@ -33,6 +33,7 @@ class InvoiceController extends Controller
         $response = $invoices->toArray();
         $response['stats'] = [
             'paid'    => \App\Models\Invoice::where('status', 'paid')->count(),
+            'partial' => \App\Models\Invoice::where('status', 'partial')->count(),
             'unpaid'  => \App\Models\Invoice::where('status', 'unpaid')->count(),
             'revenue' => \App\Models\Invoice::sum('amount_received'),
         ];

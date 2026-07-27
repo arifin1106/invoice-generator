@@ -35,6 +35,7 @@ export default function Dashboard() {
   const stats = useMemo(() => ({
     total:   data?.total ?? 0,
     paid:    data?.stats?.paid ?? 0,
+    partial: data?.stats?.partial ?? 0,
     unpaid:  data?.stats?.unpaid ?? 0,
     revenue: data?.stats?.revenue ?? 0,
   }), [data]);
@@ -53,6 +54,7 @@ export default function Dashboard() {
         {[
           { icon: FileText,     color: 'blue',   value: data?.total ?? 0,          label: 'Total Invoice' },
           { icon: CheckCircle,  color: 'green',  value: stats.paid,                label: 'Lunas' },
+          { icon: AlertCircle,  color: 'orange', value: stats.partial,             label: 'Sebagian' },
           { icon: AlertCircle,  color: 'red',    value: stats.unpaid,              label: 'Belum Lunas' },
           { icon: TrendingUp,   color: 'purple', value: formatRupiah(stats.revenue), label: 'Total Diterima' },
         ].map(({ icon: Icon, color, value, label }) => (
