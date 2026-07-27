@@ -34,10 +34,10 @@ export default function Dashboard() {
 
   const stats = useMemo(() => ({
     total:   data?.total ?? 0,
-    paid:    invoices.filter((i) => i.status === 'paid').length,
-    unpaid:  invoices.filter((i) => i.status === 'unpaid').length,
-    revenue: invoices.reduce((s, i) => s + parseFloat(i.amount_received ?? 0), 0),
-  }), [invoices, data]);
+    paid:    data?.stats?.paid ?? 0,
+    unpaid:  data?.stats?.unpaid ?? 0,
+    revenue: data?.stats?.revenue ?? 0,
+  }), [data]);
 
   return (
     <div className="page">

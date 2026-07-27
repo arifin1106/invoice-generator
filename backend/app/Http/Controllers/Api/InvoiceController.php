@@ -28,9 +28,16 @@ class InvoiceController extends Controller
             $query->where('status', $request->status);
         }
 
-        $invoices = $query->latest()->paginate($request->get('per_page', 15));
+        $invoices = $query->orderBy('id', 'asc')->paginate($request->get('per_page', 15));
+        
+        $response = $invoices->toArray();
+        $response['stats'] = [
+            'paid'    => \App\Models\Invoice::where('status', 'paid')->count(),
+            'unpaid'  => \App\Models\Invoice::where('status', 'unpaid')->count(),
+            'revenue' => \App\Models\Invoice::sum('amount_received'),
+        ];
 
-        return response()->json($invoices);
+        return response()->json($response);
     }
 
     public function store(Request $request): JsonResponse
