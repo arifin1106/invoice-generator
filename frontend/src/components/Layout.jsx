@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -5,6 +6,7 @@ import {
   Settings,
   PlusCircle,
   GraduationCap,
+  Menu,
 } from 'lucide-react';
 
 const navItems = [
@@ -14,20 +16,26 @@ const navItems = [
 
 export default function Layout() {
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isCollapsed ? 'app-shell--collapsed' : ''}`}>
       {/* Sidebar */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isCollapsed ? 'sidebar--collapsed' : ''}`}>
         {/* Brand */}
         <div className="sidebar-brand">
-          <div className="brand-icon">
-            <GraduationCap size={22} />
+          <div className="brand-info">
+            <div className="brand-icon">
+              <GraduationCap size={22} />
+            </div>
+            <div className="brand-text">
+              <span className="brand-title">JCoS</span>
+              <span className="brand-sub">Invoice System</span>
+            </div>
           </div>
-          <div className="brand-text">
-            <span className="brand-title">JCoS</span>
-            <span className="brand-sub">Invoice System</span>
-          </div>
+          <button className="sidebar-toggle btn-ghost" onClick={() => setIsCollapsed(!isCollapsed)}>
+            <Menu size={20} />
+          </button>
         </div>
 
         {/* Nav */}
