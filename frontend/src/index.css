@@ -177,7 +177,268 @@ body {
   overflow-y: auto;
   min-height: 100vh;
   background: var(--surface-0);
+  display: flex;
+  flex-direction: column;
 }
+
+/* ──────────────────────────────────────────────────────── */
+/*  TOPBAR                                                  */
+/* ──────────────────────────────────────────────────────── */
+.topbar {
+  height: 56px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  flex-shrink: 0;
+}
+.topbar-spacer { flex: 1; }
+.topbar-right { position: relative; display: flex; align-items: center; }
+
+.topbar-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  transition: background var(--transition);
+}
+.topbar-profile-btn:hover { background: var(--surface-2); }
+
+.topbar-avatar-img {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--brand-400);
+}
+.topbar-avatar-initials {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-400));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.topbar-user-info { text-align: left; }
+.topbar-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+}
+.topbar-chevron {
+  color: var(--text-secondary);
+  transition: transform var(--transition);
+}
+.topbar-chevron--open { transform: rotate(180deg); }
+
+/* Dropdown */
+.topbar-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  animation: slideUp 0.15s ease;
+  overflow: hidden;
+}
+.topbar-dropdown-header {
+  padding: 14px 16px 12px;
+}
+.topbar-dropdown-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.topbar-dropdown-email {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.topbar-dropdown-divider {
+  height: 1px;
+  background: var(--border);
+}
+.topbar-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 16px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 13.5px;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition);
+}
+.topbar-dropdown-item:hover { background: var(--surface-3); }
+.topbar-dropdown-item--danger { color: var(--red); }
+.topbar-dropdown-item--danger:hover { background: var(--red-bg); }
+
+/* ──────────────────────────────────────────────────────── */
+/*  MODAL OVERLAY & PROFILE MODAL                          */
+/* ──────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+.modal-box {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+.modal-box--profile { max-width: 540px; }
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-title { font-size: 17px; font-weight: 700; }
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+}
+.modal-close:hover { color: var(--text-primary); background: var(--surface-2); }
+
+.profile-modal-body {
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.profile-section {}
+.profile-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Photo area */
+.profile-photo-area {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.profile-photo-preview {
+  position: relative;
+  flex-shrink: 0;
+}
+.profile-photo-img {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--brand-400);
+}
+.profile-photo-initials {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-400));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+}
+.profile-photo-loading {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+}
+.profile-photo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.profile-photo-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.profile-feedback {
+  margin: 0 24px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+}
+.profile-feedback--success {
+  background: var(--green-bg);
+  color: var(--green);
+  border: 1px solid rgba(34,197,94,0.25);
+}
+.profile-feedback--error {
+  background: var(--red-bg);
+  color: var(--red);
+  border: 1px solid rgba(239,68,68,0.25);
+}
+
+/* ── Password input with eye toggle ── */
+.input-password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-password-wrap .form-input {
+  width: 100%;
+  padding-right: 42px;
+}
+.input-eye {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+}
+.input-eye:hover { color: var(--text-primary); }
 
 /* ──────────────────────────────────────────────────────── */
 /*  PAGE                                                    */

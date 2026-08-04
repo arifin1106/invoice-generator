@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { GraduationCap, Loader2 } from 'lucide-react';
+import { GraduationCap, Loader2, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const { login, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -56,14 +57,23 @@ export default function Login() {
           
           <div className="form-group">
             <label className="form-label">Password</label>
-            <input 
-              type="password" 
-              className="form-input" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required 
-              placeholder="••••••••"
-            />
+            <div className="input-password-wrap">
+              <input 
+                type={showPassword ? 'text' : 'password'}
+                className="form-input" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required 
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                className="input-eye"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
           
           <button type="submit" className="btn btn-primary btn-full mt-2" disabled={loading}>
