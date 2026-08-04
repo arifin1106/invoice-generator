@@ -4,15 +4,26 @@ use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\SettingController;
 use Illuminate\Support\Facades\Route;
 
-// Settings
-Route::get('/settings', [SettingController::class, 'show']);
-Route::post('/settings', [SettingController::class, 'update']);
+use App\Http\Controllers\Api\AuthController;
 
-// Invoice number generator
-Route::get('/invoices/generate-number', [InvoiceController::class, 'generateNumber']);
+// Public Auth routes
+Route::post('/login', [AuthController::class, 'login']);
 
-// Invoices CRUD
-Route::apiResource('invoices', InvoiceController::class);
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
 
-// PDF Download
-Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf']);
+    // Settings
+    Route::get('/settings', [SettingController::class, 'show']);
+    Route::post('/settings', [SettingController::class, 'update']);
+
+    // Invoice number generator
+    Route::get('/invoices/generate-number', [InvoiceController::class, 'generateNumber']);
+
+    // Invoices CRUD
+    Route::apiResource('invoices', InvoiceController::class);
+
+    // PDF Download
+    Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf']);
+});

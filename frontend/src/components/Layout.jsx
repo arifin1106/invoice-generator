@@ -7,7 +7,9 @@ import {
   PlusCircle,
   GraduationCap,
   Menu,
+  LogOut,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -17,6 +19,7 @@ const navItems = [
 export default function Layout() {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { logout } = useAuth();
 
   return (
     <div className={`app-shell ${isCollapsed ? 'app-shell--collapsed' : ''}`}>
@@ -56,10 +59,14 @@ export default function Layout() {
 
         {/* Quick Action */}
         <div className="sidebar-footer">
-          <NavLink to="/invoices/new" className="btn btn-primary btn-full">
+          <NavLink to="/invoices/new" className="btn btn-primary btn-full mb-3">
             <PlusCircle size={16} />
             <span>Buat Invoice</span>
           </NavLink>
+          <button onClick={logout} className="btn btn-ghost btn-full" style={{ color: 'var(--red)' }}>
+            <LogOut size={16} />
+            <span>Keluar</span>
+          </button>
         </div>
       </aside>
 

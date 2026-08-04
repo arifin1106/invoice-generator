@@ -131,7 +131,7 @@ export default function Dashboard() {
                       <div className="action-btns">
                         <button className="action-btn action-btn--view" title="Preview" onClick={() => navigate(`/invoices/${inv.id}/preview`)}><Eye size={15} /></button>
                         <button className="action-btn action-btn--edit" title="Edit" onClick={() => navigate(`/invoices/${inv.id}/edit`)}><Pencil size={15} /></button>
-                        <a className="action-btn action-btn--download" title="Download PDF" href={invoiceApi.pdfUrl(inv.id)} target="_blank" rel="noreferrer"><FileDown size={15} /></a>
+                        <button className="action-btn action-btn--download" title="Download PDF" onClick={() => invoiceApi.downloadPdf(inv.id, inv.invoice_number)}><FileDown size={15} /></button>
                         <button className="action-btn action-btn--delete" title="Hapus" onClick={() => setDeleteId(inv.id)}><Trash2 size={15} /></button>
                       </div>
                     </td>

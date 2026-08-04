@@ -900,6 +900,53 @@ body {
 }
 
 /* ──────────────────────────────────────────────────────── */
+/*  LOGIN PAGE                                              */
+/* ──────────────────────────────────────────────────────── */
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--surface-0);
+  padding: 20px;
+}
+.login-box {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 400px;
+  padding: 40px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.4s ease;
+}
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+.login-icon {
+  margin: 0 auto 16px;
+  width: 56px; height: 56px;
+  box-shadow: 0 4px 16px rgba(59,111,212,0.4);
+}
+.login-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.login-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+.login-form .form-group {
+  margin-bottom: 20px;
+}
+.login-form .btn {
+  margin-top: 10px;
+}
+
+/* ──────────────────────────────────────────────────────── */
 /*  RESPONSIVE (TABLET & MOBILE)                            */
 /* ──────────────────────────────────────────────────────── */
 
