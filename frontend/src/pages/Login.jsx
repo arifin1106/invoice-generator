@@ -51,7 +51,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required 
-              placeholder="admin@jacos.id"
+              placeholder="example@mail.com"
             />
           </div>
           
