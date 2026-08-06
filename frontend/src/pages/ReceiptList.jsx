@@ -189,12 +189,12 @@ export default function ReceiptList() {
 
       {/* Delete Confirmation */}
       {deleteId && (
-        <div className="modal-overlay">
-          <div className="modal-box" style={{ maxWidth: 400 }}>
-            <h3 className="modal-title mb-2">Hapus Kwitansi?</h3>
-            <p className="text-muted mb-4">Data kwitansi ini akan dihapus permanen dan tidak dapat dikembalikan.</p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button className="btn btn-secondary" onClick={() => setDeleteId(null)}>Batal</button>
+        <div className="modal-overlay" onClick={() => setDeleteId(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Hapus Kwitansi?</h3>
+            <p className="modal-body">Data kwitansi ini akan dihapus permanen dan tidak dapat dikembalikan.</p>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Batal</button>
               <button
                 className="btn btn-danger"
                 onClick={() => deleteMutation.mutate(deleteId)}
