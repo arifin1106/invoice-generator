@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { receiptApi } from '../services/api';
 import { formatRupiah, formatDate } from '../utils/format';
 import {
-  Search, Eye, Pencil, Trash2, FileDown, PlusCircle, Receipt
+  Search, Eye, Pencil, Trash2, FileDown, PlusCircle, 
+  Receipt, FileText, CheckCircle, Shirt, Utensils, Bus
 } from 'lucide-react';
 
 export default function ReceiptList() {
@@ -31,6 +32,13 @@ export default function ReceiptList() {
 
   const receipts = data?.data ?? [];
 
+  const stats = useMemo(() => ({
+    total:     data?.stats?.total ?? 0,
+    seragam:   data?.stats?.seragam ?? 0,
+    cathering: data?.stats?.cathering ?? 0,
+    jemputan:  data?.stats?.jemputan ?? 0,
+  }), [data]);
+
   return (
     <div className="page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -42,6 +50,26 @@ export default function ReceiptList() {
           <PlusCircle size={16} />
           <span>Buat Kwitansi</span>
         </Link>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="stats-grid">
+        {[
+          { icon: FileText,     color: 'blue',   value: stats.total,     label: 'Total Kwitansi' },
+          { icon: Shirt,        color: 'purple', value: stats.seragam,   label: 'Seragam Sekolah' },
+          { icon: Utensils,     color: 'orange', value: stats.cathering, label: 'Cathering Makanan' },
+          { icon: Bus,          color: 'green',  value: stats.jemputan,  label: 'Jemputan Sekolah' },
+        ].map(({ icon: Icon, color, value, label }) => (
+          <div key={label} className="stat-card">
+            <div className={`stat-icon stat-icon--${color}`}>
+              <Icon size={24} />
+            </div>
+            <div className="stat-info">
+              <div className="stat-label">{label}</div>
+              <div className="stat-value">{value}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Filters */}
@@ -94,29 +122,41 @@ export default function ReceiptList() {
                   <td colSpan="6" className="text-center">Belum ada data kwitansi.</td>
                 </tr>
               ) : (
-                receipts.map((r) => (
-                  <tr key={r.id}>
-                    <td>
-                      <span className="fw-600">{r.receipt_number}</span>
-                    </td>
-                    <td>{formatDate(r.date)}</td>
-                    <td>{r.received_from}</td>
-                    <td>
-                      <span className={`badge`} style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}>
-                        {r.payment_category || 'Lainnya'}
-                      </span>
-                    </td>
-                    <td className="fw-700">{formatRupiah(r.amount)}</td>
-                    <td>
-                      <div className="action-btns">
-                        <button className="action-btn action-btn--view" title="Preview" onClick={() => navigate(`/receipts/${r.id}/preview`)}><Eye size={15} /></button>
-                        <button className="action-btn action-btn--edit" title="Edit" onClick={() => navigate(`/receipts/${r.id}/edit`)}><Pencil size={15} /></button>
-                        <button className="action-btn action-btn--download" title="Download PDF" onClick={() => receiptApi.downloadPdf(r.id, r.receipt_number)}><FileDown size={15} /></button>
-                        <button className="action-btn action-btn--delete" title="Hapus" onClick={() => setDeleteId(r.id)}><Trash2 size={15} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                receipts.map((r) => {
+                  let badgeColor = 'var(--surface-2)';
+                  let textColor = 'var(--text-secondary)';
+                  if (r.payment_category === 'Seragam Sekolah') {
+                    badgeColor = 'rgba(168, 85, 247, 0.1)'; textColor = 'var(--purple)';
+                  } else if (r.payment_category === 'Cathering Makanan') {
+                    badgeColor = 'rgba(249, 115, 22, 0.1)'; textColor = 'var(--orange)';
+                  } else if (r.payment_category === 'Jemputan Sekolah') {
+                    badgeColor = 'rgba(34, 197, 94, 0.1)'; textColor = 'var(--green)';
+                  }
+
+                  return (
+                    <tr key={r.id}>
+                      <td>
+                        <span className="fw-600">{r.receipt_number}</span>
+                      </td>
+                      <td>{formatDate(r.date)}</td>
+                      <td>{r.received_from}</td>
+                      <td>
+                        <span className="badge" style={{ background: badgeColor, color: textColor, border: `1px solid ${textColor}40` }}>
+                          {r.payment_category || 'Lainnya'}
+                        </span>
+                      </td>
+                      <td className="fw-700">{formatRupiah(r.amount)}</td>
+                      <td>
+                        <div className="action-btns">
+                          <button className="action-btn action-btn--view" title="Preview" onClick={() => navigate(`/receipts/${r.id}/preview`)}><Eye size={15} /></button>
+                          <button className="action-btn action-btn--edit" title="Edit" onClick={() => navigate(`/receipts/${r.id}/edit`)}><Pencil size={15} /></button>
+                          <button className="action-btn action-btn--download" title="Download PDF" onClick={() => receiptApi.downloadPdf(r.id, r.receipt_number)}><FileDown size={15} /></button>
+                          <button className="action-btn action-btn--delete" title="Hapus" onClick={() => setDeleteId(r.id)}><Trash2 size={15} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>

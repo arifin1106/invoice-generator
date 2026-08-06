@@ -17,15 +17,50 @@ class ReceiptController extends Controller
     {
         $query = Receipt::query();
 
-        if ($request->has('category')) {
+        if ($request->filled('category')) {
             $query->where('payment_category', $request->category);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('receipt_number', 'like', "%{$search}%")
+                  ->orWhere('received_from', 'like', "%{$search}%");
+            });
         }
 
         $receipts = $query->orderBy('date', 'desc')
                           ->orderBy('id', 'desc')
                           ->paginate(10);
 
-        return response()->json($receipts);
+        // Get total stats (independent of pagination and search/category filters if we want overall stats, 
+        // but maybe we just get overall stats)
+        $totalKwitansi = Receipt::count();
+        $totalSeragam = Receipt::where('payment_category', 'Seragam Sekolah')->count();
+        $totalCathering = Receipt::where('payment_category', 'Cathering Makanan')->count();
+        $totalJemputan = Receipt::where('payment_category', 'Jemputan Sekolah')->count();
+
+        return response()->json([
+            'current_page' => $receipts->currentPage(),
+            'data' => $receipts->items(),
+            'first_page_url' => $receipts->url(1),
+            'from' => $receipts->firstItem(),
+            'last_page' => $receipts->lastPage(),
+            'last_page_url' => $receipts->url($receipts->lastPage()),
+            'links' => $receipts->linkCollection()->toArray(),
+            'next_page_url' => $receipts->nextPageUrl(),
+            'path' => $receipts->path(),
+            'per_page' => $receipts->perPage(),
+            'prev_page_url' => $receipts->previousPageUrl(),
+            'to' => $receipts->lastItem(),
+            'total' => $receipts->total(),
+            'stats' => [
+                'total' => $totalKwitansi,
+                'seragam' => $totalSeragam,
+                'cathering' => $totalCathering,
+                'jemputan' => $totalJemputan,
+            ]
+        ]);
     }
 
     /**
