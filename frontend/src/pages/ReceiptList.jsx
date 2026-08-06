@@ -99,27 +99,30 @@ export default function ReceiptList() {
       </div>
 
       {/* Table */}
-      <div className="card">
+      <div className="table-card">
         <div className="table-responsive">
-          <table className="table">
+          <table className="data-table">
             <thead>
               <tr>
                 <th>No Kwitansi</th>
                 <th>Tanggal</th>
                 <th>Diterima Dari</th>
-                <th>Kategori</th>
-                <th>Nominal</th>
-                <th>Aksi</th>
+                <th className="text-center">Kategori</th>
+                <th className="text-right">Nominal</th>
+                <th className="text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan="6" className="text-center">Memuat data...</td>
+                  <td colSpan="6" className="text-center"><div className="spinner" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '8px'}} /> Memuat data...</td>
                 </tr>
               ) : receipts.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center">Belum ada data kwitansi.</td>
+                  <td colSpan="6" className="table-empty">
+                    <FileText size={48} className="empty-icon" />
+                    <p>Belum ada data kwitansi. <span className="link" onClick={() => navigate('/receipts/new')}>Buat sekarang</span></p>
+                  </td>
                 </tr>
               ) : (
                 receipts.map((r) => {
@@ -135,19 +138,17 @@ export default function ReceiptList() {
 
                   return (
                     <tr key={r.id}>
-                      <td>
-                        <span className="fw-600">{r.receipt_number}</span>
-                      </td>
+                      <td className="font-mono">{r.receipt_number}</td>
                       <td>{formatDate(r.date)}</td>
-                      <td>{r.received_from}</td>
-                      <td>
+                      <td className="font-medium">{r.received_from}</td>
+                      <td className="text-center">
                         <span className="badge" style={{ background: badgeColor, color: textColor, border: `1px solid ${textColor}40` }}>
                           {r.payment_category || 'Lainnya'}
                         </span>
                       </td>
-                      <td className="fw-700">{formatRupiah(r.amount)}</td>
-                      <td>
-                        <div className="action-btns">
+                      <td className="text-right font-medium">{formatRupiah(r.amount)}</td>
+                      <td className="text-center">
+                        <div className="action-btns" style={{ justifyContent: 'center' }}>
                           <button className="action-btn action-btn--view" title="Preview" onClick={() => navigate(`/receipts/${r.id}/preview`)}><Eye size={15} /></button>
                           <button className="action-btn action-btn--edit" title="Edit" onClick={() => navigate(`/receipts/${r.id}/edit`)}><Pencil size={15} /></button>
                           <button className="action-btn action-btn--download" title="Download PDF" onClick={() => receiptApi.downloadPdf(r.id, r.receipt_number)}><FileDown size={15} /></button>
