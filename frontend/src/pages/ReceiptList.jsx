@@ -99,33 +99,33 @@ export default function ReceiptList() {
       </div>
 
       {/* Table */}
+      {/* Table */}
       <div className="table-card">
         <div className="table-responsive">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>No Kwitansi</th>
-                <th>Tanggal</th>
-                <th>Diterima Dari</th>
-                <th className="text-center">Kategori</th>
-                <th className="text-right">Nominal</th>
-                <th className="text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
+          {isLoading ? (
+            <div className="table-empty">
+              <div className="spinner" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '8px'}} />
+              <p>Memuat data...</p>
+            </div>
+          ) : receipts.length === 0 ? (
+            <div className="table-empty">
+              <FileText size={48} className="empty-icon" />
+              <p>Belum ada data kwitansi. <span className="link" onClick={() => navigate('/receipts/new')}>Buat sekarang</span></p>
+            </div>
+          ) : (
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <td colSpan="6" className="text-center"><div className="spinner" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '8px'}} /> Memuat data...</td>
+                  <th>No Kwitansi</th>
+                  <th>Tanggal</th>
+                  <th>Diterima Dari</th>
+                  <th className="text-center">Kategori</th>
+                  <th className="text-right">Nominal</th>
+                  <th className="text-center">Aksi</th>
                 </tr>
-              ) : receipts.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="table-empty">
-                    <FileText size={48} className="empty-icon" />
-                    <p>Belum ada data kwitansi. <span className="link" onClick={() => navigate('/receipts/new')}>Buat sekarang</span></p>
-                  </td>
-                </tr>
-              ) : (
-                receipts.map((r) => {
+              </thead>
+              <tbody>
+                {receipts.map((r) => {
                   let badgeColor = 'var(--surface-2)';
                   let textColor = 'var(--text-secondary)';
                   if (r.payment_category === 'Seragam Sekolah') {
@@ -157,10 +157,10 @@ export default function ReceiptList() {
                       </td>
                     </tr>
                   )
-                })
-              )}
-            </tbody>
-          </table>
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Pagination */}
