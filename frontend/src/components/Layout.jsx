@@ -6,14 +6,16 @@ import {
   PlusCircle,
   GraduationCap,
   Menu,
+  Receipt,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Topbar from './Topbar';
 import ProfileModal from './ProfileModal';
 
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/settings',  icon: Settings,         label: 'Pengaturan' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Invoice' },
+  { to: '/receipts',  icon: Receipt,         label: 'Kwitansi' },
+  { to: '/settings',  icon: Settings,        label: 'Pengaturan' },
 ];
 
 export default function Layout() {

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ReceiptController;
 use Illuminate\Support\Facades\Route;
 
 // Public Auth routes
@@ -31,4 +32,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // PDF Download
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf']);
+
+    // Receipt number generator
+    Route::get('/receipts/generate-number', [ReceiptController::class, 'generateNumber']);
+
+    // Receipts CRUD
+    Route::apiResource('receipts', ReceiptController::class);
+
+    // Receipt PDF Download
+    Route::get('/receipts/{receipt}/pdf', [ReceiptController::class, 'downloadPdf']);
 });

@@ -1,0 +1,134 @@
+import { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { receiptApi, settingApi } from '../services/api';
+import { ArrowLeft, FileDown, Loader2 } from 'lucide-react';
+import { formatRupiah, formatDate } from '../utils/format';
+
+export default function ReceiptPreview() {
+  const { id } = useParams();
+  const [downloading, setDownloading] = useState(false);
+
+  const { data: receipt, isLoading: receiptLoading } = useQuery({
+    queryKey: ['receipt', id],
+    queryFn: () => receiptApi.show(id).then(r => r.data),
+  });
+
+  const { data: setting } = useQuery({
+    queryKey: ['setting'],
+    queryFn: () => settingApi.show().then(r => r.data),
+  });
+
+  if (receiptLoading) return <div className="page p-24">Memuat preview...</div>;
+  if (!receipt) return <div className="page p-24">Data tidak ditemukan.</div>;
+
+  const handleDownload = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      await receiptApi.downloadPdf(id, receipt.receipt_number);
+    } catch (e) {
+      console.error(e);
+      alert('Gagal mendownload kwitansi.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const city = setting?.institution_address ? setting.institution_address.split(',')[0] : 'Jakarta';
+
+  return (
+    <div className="page p-24" style={{ background: 'var(--surface-0)' }}>
+      {/* Action Bar */}
+      <div className="preview-action-bar">
+        <Link to="/receipts" className="btn btn-ghost" style={{ padding: '8px' }}>
+          <ArrowLeft size={18} />
+          <span>Kembali</span>
+        </Link>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            className="btn btn-primary"
+            onClick={handleDownload}
+            disabled={downloading}
+          >
+            {downloading ? <Loader2 size={16} className="spin-icon" /> : <FileDown size={16} />}
+            {downloading ? 'Mengunduh...' : 'Download PDF'}
+          </button>
+        </div>
+      </div>
+
+      {/* A4 landscape sheet mockup */}
+      <div className="a4-sheet" style={{ maxWidth: '800px', margin: '20px auto', padding: '30px', position: 'relative' }}>
+        <div style={{ border: '2px solid #000', padding: '30px', borderRadius: '8px' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
+            <div style={{ width: '25%' }}>
+              {setting?.institution_logo ? (
+                <img
+                  src={import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL.replace('/api', '')}/storage/${setting.institution_logo}` : `/storage/${setting.institution_logo}`}
+                  alt="Logo"
+                  style={{ maxHeight: '70px', maxWidth: '100%' }}
+                  onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                />
+              ) : (
+                <div style={{ fontWeight: 'bold', fontSize: '18pt' }}>JACOS</div>
+              )}
+              <div style={{ fontWeight: 'bold', fontSize: '18pt', display: 'none' }}>JACOS</div>
+            </div>
+            
+            <div style={{ width: '50%', textAlign: 'center' }}>
+              <h1 style={{ fontSize: '24pt', fontWeight: 700, letterSpacing: '3px', textDecoration: 'underline' }}>KWITANSI</h1>
+              <p style={{ fontSize: '12pt', fontWeight: 'bold', marginTop: '5px' }}>No. {receipt.receipt_number}</p>
+            </div>
+            
+            <div style={{ width: '25%' }}></div>
+          </div>
+
+          <table style={{ width: '100%', marginBottom: '40px', fontSize: '12pt' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '200px', padding: '10px 0', fontWeight: 600 }}>Telah terima dari</td>
+                <td style={{ width: '20px', textAlign: 'center' }}>:</td>
+                <td style={{ borderBottom: '1px dotted #000', fontStyle: 'italic', padding: '10px 5px' }}>
+                  {receipt.received_from}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '15px 0', fontWeight: 600, verticalAlign: 'top' }}>Uang sejumlah</td>
+                <td style={{ textAlign: 'center', verticalAlign: 'top', paddingTop: '15px' }}>:</td>
+                <td style={{ padding: '15px 5px' }}>
+                  <div style={{ background: '#f2f2f2', padding: '15px', border: '1px solid #000', borderRadius: '4px', fontWeight: 'bold', fontStyle: 'italic', fontSize: '13pt' }}>
+                    # {receipt.amount_in_words} #
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '10px 0', fontWeight: 600 }}>Untuk pembayaran</td>
+                <td style={{ textAlign: 'center' }}>:</td>
+                <td style={{ borderBottom: '1px dotted #000', fontStyle: 'italic', padding: '10px 5px' }}>
+                  {receipt.payment_category && <strong>[{receipt.payment_category}] </strong>}
+                  {receipt.description}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <div style={{ border: '2px solid #000', padding: '15px 25px', fontSize: '20pt', fontWeight: 'bold', borderRadius: '4px', background: '#fdfdfd' }}>
+              {formatRupiah(receipt.amount)}
+            </div>
+            
+            <div style={{ textAlign: 'center', width: '250px' }}>
+              <div style={{ marginBottom: '70px', fontSize: '12pt' }}>
+                {city}, {formatDate(receipt.date)}
+              </div>
+              <div style={{ borderBottom: '1px solid #000', width: '100%' }}></div>
+              <div style={{ fontWeight: 'bold', fontSize: '12pt', marginTop: '5px' }}>Penerima</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -56,4 +56,28 @@ export const settingApi = {
   update: (data) => api.post('/settings', data),
 };
 
+export const receiptApi = {
+  list:           (params) => api.get('/receipts', { params }),
+  show:           (id)     => api.get(`/receipts/${id}`),
+  create:         (data)   => api.post('/receipts', data),
+  update:         (id, data) => api.put(`/receipts/${id}`, data),
+  remove:         (id)     => api.delete(`/receipts/${id}`),
+  generateNumber: ()       => api.get('/receipts/generate-number'),
+  downloadPdf: async (id, receiptNumber) => {
+    const response = await api.get(
+      `/receipts/${id}/pdf`,
+      { responseType: 'blob' }
+    );
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url  = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href  = url;
+    link.download = `Kwitansi-${(receiptNumber || id).replace(/\//g, '-')}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
+};
+
 export default api;
