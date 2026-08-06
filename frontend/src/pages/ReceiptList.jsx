@@ -73,22 +73,22 @@ export default function ReceiptList() {
       </div>
 
       {/* Filters */}
-      <div className="filters-card">
+      <div className="filters-bar">
         <div className="search-box">
-          <Search size={18} className="search-icon" />
+          <Search size={16} className="search-icon" />
           <input
             type="text"
-            className="form-input"
+            className="search-input"
             placeholder="Cari nomor kwitansi atau nama..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
         
         <select
-          className="form-input filter-select"
+          className="filter-select"
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          onChange={(e) => { setCategory(e.target.value); setPage(1); }}
         >
           <option value="">Semua Kategori</option>
           <option value="Seragam Sekolah">Seragam Sekolah</option>
