@@ -35,8 +35,8 @@ export const invoiceApi = {
   generateNumber: ()       => api.get('/invoices/generate-number'),
   pdfUrl:         (id)     => `${api.defaults.baseURL}/invoices/${id}/pdf`,
   downloadPdf: async (id, invoiceNumber) => {
-    const response = await axios.get(
-      `${api.defaults.baseURL}/invoices/${id}/pdf`,
+    const response = await api.get(
+      `/invoices/${id}/pdf`,
       { responseType: 'blob' }
     );
     const blob = new Blob([response.data], { type: 'application/pdf' });
