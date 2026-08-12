@@ -126,14 +126,14 @@ export default function ReceiptList() {
               </thead>
               <tbody>
                 {receipts.map((r) => {
-                  let badgeColor = 'var(--surface-2)';
-                  let textColor = 'var(--text-secondary)';
+                  let badgeColor = 'rgba(12, 113, 181, 0.10)';
+                  let textColor = '#0c71b5';
                   if (r.payment_category === 'Seragam Sekolah') {
-                    badgeColor = 'rgba(168, 85, 247, 0.1)'; textColor = 'var(--purple)';
+                    badgeColor = 'rgba(124, 58, 237, 0.10)'; textColor = '#7c3aed';
                   } else if (r.payment_category === 'Cathering Makanan') {
-                    badgeColor = 'rgba(249, 115, 22, 0.1)'; textColor = 'var(--orange)';
+                    badgeColor = 'rgba(217, 119, 6, 0.10)'; textColor = '#d97706';
                   } else if (r.payment_category === 'Jemputan Sekolah') {
-                    badgeColor = 'rgba(34, 197, 94, 0.1)'; textColor = 'var(--green)';
+                    badgeColor = 'rgba(22, 163, 74, 0.10)'; textColor = '#16a34a';
                   }
 
                   return (
