@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { settingApi } from '../services/api';
-import { Save, Building2, CreditCard, PenLine } from 'lucide-react';
+import { settingApi, paymentCategoryApi } from '../services/api';
+import { Save, Building2, CreditCard, PenLine, Coins } from 'lucide-react';
 
 export default function Settings() {
   const qc = useQueryClient();
@@ -12,14 +12,20 @@ export default function Settings() {
     queryFn: () => settingApi.show().then((r) => r.data),
   });
 
+  const { data: categories, isLoading: loadingCategories } = useQuery({
+    queryKey: ['payment-categories'],
+    queryFn: () => paymentCategoryApi.list().then((r) => r.data),
+  });
+
   const [form, setForm] = useState({
     institution_name: '', institution_address: '', institution_phone: '',
     institution_email: '', bank_name: '', bank_account_number: '',
     bank_account_name: '', signer_name: '', signer_title: '',
     payment_message: '',
   });
-  const [logoFile, setLogoFile]   = useState(null);
-  const [sigFile,  setSigFile]    = useState(null);
+  const [logoFile, setLogoFile] = useState(null);
+  const [sigFile, setSigFile] = useState(null);
+  const [catAmounts, setCatAmounts] = useState({});
 
   useEffect(() => {
     if (setting) {
@@ -38,6 +44,16 @@ export default function Settings() {
     }
   }, [setting]);
 
+  useEffect(() => {
+    if (categories) {
+      const amounts = {};
+      categories.forEach((cat) => {
+        amounts[cat.id] = cat.default_amount;
+      });
+      setCatAmounts(amounts);
+    }
+  }, [categories]);
+
   const mutation = useMutation({
     mutationFn: () => {
       const fd = new FormData();
@@ -53,12 +69,35 @@ export default function Settings() {
     onError: () => showToast('Gagal menyimpan pengaturan.', 'error'),
   });
 
+  const categoryMutation = useMutation({
+    mutationFn: (data) => paymentCategoryApi.update(data),
+    onSuccess: (res) => {
+      qc.setQueryData(['payment-categories'], res.data);
+      showToast('Biaya default berhasil disimpan!', 'success');
+    },
+    onError: () => showToast('Gagal menyimpan biaya default.', 'error'),
+  });
+
   const showToast = (msg, type) => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 5000);
   };
 
   const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+
+  const handleCategoryAmountChange = (id, value) => {
+    setCatAmounts((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSaveCategories = () => {
+    const data = {
+      categories: Object.entries(catAmounts).map(([id, default_amount]) => ({
+        id: parseInt(id),
+        default_amount: parseFloat(default_amount) || 0,
+      })),
+    };
+    categoryMutation.mutate(data);
+  };
 
   if (isLoading) return <div className="page"><div className="table-empty"><div className="spinner" /></div></div>;
 
@@ -69,7 +108,7 @@ export default function Settings() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Pengaturan</h1>
-          <p className="page-subtitle">Konfigurasi data instansi dan rekening bank</p>
+          <p className="page-subtitle">Konfigurasi data instansi, rekening bank, dan biaya default</p>
         </div>
         <button className="btn btn-primary" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
           <Save size={16} />
@@ -107,11 +146,7 @@ export default function Settings() {
             <label className="form-label">Logo Instansi</label>
             <div className="file-upload">
               {setting?.logo_url && (
-                <img
-                  src={setting.logo_url}
-                  alt="Logo"
-                  className="preview-img"
-                />
+                <img src={setting.logo_url} alt="Logo" className="preview-img" />
               )}
               <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files[0])} className="form-input" />
             </div>
@@ -140,7 +175,7 @@ export default function Settings() {
           </div>
 
           {/* Signature */}
-          <div className="form-section">
+          <div className="form-section mb-4">
             <div className="section-header">
               <PenLine size={18} className="section-icon" />
               <h2 className="section-title">Tanda Tangan</h2>
@@ -159,11 +194,7 @@ export default function Settings() {
               <label className="form-label">File Tanda Tangan</label>
               <div className="file-upload">
                 {setting?.signature_url && (
-                  <img
-                    src={setting.signature_url}
-                    alt="TTD"
-                    className="preview-img preview-img--sig"
-                  />
+                  <img src={setting.signature_url} alt="TTD" className="preview-img preview-img--sig" />
                 )}
                 <input type="file" accept="image/*" onChange={(e) => setSigFile(e.target.files[0])} className="form-input" />
               </div>
@@ -172,6 +203,55 @@ export default function Settings() {
               <label className="form-label">Pesan Konfirmasi Pembayaran</label>
               <textarea name="payment_message" className="form-input form-textarea" rows={4} value={form.payment_message} onChange={handleChange} />
             </div>
+          </div>
+
+          {/* Payment Categories / Biaya Default */}
+          <div className="form-section">
+            <div className="section-header">
+              <Coins size={18} className="section-icon" />
+              <h2 className="section-title">Biaya Default</h2>
+            </div>
+            <p className="section-desc">Atur harga default untuk setiap kategori biaya. Harga ini akan muncul sebagai opsi quick-add saat membuat invoice baru.</p>
+
+            {loadingCategories ? (
+              <div className="spinner" />
+            ) : (
+              <>
+                <div className="category-table">
+                  <div className="category-table-header">
+                    <span className="cat-col-name">Kategori</span>
+                    <span className="cat-col-amount">Harga Default</span>
+                  </div>
+                  {categories?.map((cat) => (
+                    <div key={cat.id} className="category-table-row">
+                      <span className="cat-col-name">{cat.name}</span>
+                      <div className="cat-col-amount">
+                        <div className="input-group">
+                          <span className="input-prefix">Rp</span>
+                          <input
+                            type="number"
+                            className="form-input text-right"
+                            min="0"
+                            value={catAmounts[cat.id] ?? ''}
+                            onChange={(e) => handleCategoryAmountChange(cat.id, e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3">
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={handleSaveCategories}
+                    disabled={categoryMutation.isPending}
+                  >
+                    <Save size={14} />
+                    {categoryMutation.isPending ? 'Menyimpan...' : 'Simpan Biaya Default'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

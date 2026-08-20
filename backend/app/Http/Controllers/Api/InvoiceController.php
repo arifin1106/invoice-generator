@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Setting;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -32,10 +33,10 @@ class InvoiceController extends Controller
         
         $response = $invoices->toArray();
         $response['stats'] = [
-            'paid'    => \App\Models\Invoice::where('status', 'paid')->count(),
-            'partial' => \App\Models\Invoice::where('status', 'partial')->count(),
-            'unpaid'  => \App\Models\Invoice::where('status', 'unpaid')->count(),
-            'revenue' => \App\Models\Invoice::sum('amount_received'),
+            'paid'    => Invoice::where('status', 'paid')->count(),
+            'partial' => Invoice::where('status', 'partial')->count(),
+            'unpaid'  => Invoice::where('status', 'unpaid')->count(),
+            'revenue' => Invoice::sum('amount_received'),
         ];
 
         return response()->json($response);
@@ -44,45 +45,61 @@ class InvoiceController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'invoice_number'  => 'required|string|unique:invoices',
-            'date'            => 'required|date',
-            'due_date'        => 'required|date',
-            'student_name'    => 'required|string|max:255',
-            'student_level'   => 'required|string|max:50',
-            'amount_received' => 'required|numeric|min:0',
-            'notes'           => 'nullable|string',
-            'items'           => 'required|array|min:1',
+            'invoice_number'      => 'required|string|unique:invoices',
+            'date'                => 'required|date',
+            'due_date'            => 'required|date',
+            'student_name'        => 'required|string|max:255',
+            'student_level'       => 'required|string|max:50',
+            'notes'               => 'nullable|string',
+            'items'               => 'required|array|min:1',
             'items.*.description' => 'required|string',
             'items.*.amount'      => 'required|numeric|min:0',
-            'items.*.status'      => 'required|in:Lunas,Belum Lunas',
+            'items.*.discount_type'  => 'nullable|in:percentage,fixed',
+            'items.*.discount_value' => 'nullable|numeric|min:0',
+            'items.*.payments'       => 'nullable|array',
+            'items.*.payments.*.amount'      => 'required_with:items.*.payments|numeric|min:0',
+            'items.*.payments.*.payment_date' => 'required_with:items.*.payments|date',
+            'items.*.payments.*.notes'         => 'nullable|string',
         ]);
 
         DB::beginTransaction();
         try {
-            $totalAmount = collect($validated['items'])->sum('amount');
-
             $invoice = Invoice::create([
-                'invoice_number'  => $validated['invoice_number'],
-                'date'            => $validated['date'],
-                'due_date'        => $validated['due_date'],
-                'student_name'    => $validated['student_name'],
-                'student_level'   => $validated['student_level'],
-                'total_amount'    => $totalAmount,
-                'amount_received' => $validated['amount_received'],
-                'notes'           => $validated['notes'] ?? null,
+                'invoice_number' => $validated['invoice_number'],
+                'date'           => $validated['date'],
+                'due_date'       => $validated['due_date'],
+                'student_name'   => $validated['student_name'],
+                'student_level'  => $validated['student_level'],
+                'total_amount'   => 0,
+                'amount_received' => 0,
+                'notes'          => $validated['notes'] ?? null,
             ]);
 
             foreach ($validated['items'] as $index => $item) {
-                $invoice->items()->create([
-                    'description' => $item['description'],
-                    'amount'      => $item['amount'],
-                    'status'      => $item['status'],
-                    'sort_order'  => $index,
+                $invoiceItem = $invoice->items()->create([
+                    'description'    => $item['description'],
+                    'amount'         => $item['amount'],
+                    'discount_type'  => $item['discount_type'] ?? null,
+                    'discount_value' => $item['discount_value'] ?? null,
+                    'sort_order'     => $index,
                 ]);
+
+                if (!empty($item['payments'])) {
+                    foreach ($item['payments'] as $payment) {
+                        $invoiceItem->payments()->create([
+                            'amount'       => $payment['amount'],
+                            'payment_date' => $payment['payment_date'],
+                            'notes'        => $payment['notes'] ?? null,
+                        ]);
+                    }
+                }
             }
 
+            $invoice->load('items.payments');
+            $invoice->save();
+
             DB::commit();
-            return response()->json($invoice->load('items'), 201);
+            return response()->json($invoice, 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Gagal menyimpan invoice: ' . $e->getMessage()], 500);
@@ -91,52 +108,69 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice): JsonResponse
     {
-        return response()->json($invoice->load('items'));
+        return response()->json($invoice->load('items.payments'));
     }
 
     public function update(Request $request, Invoice $invoice): JsonResponse
     {
         $validated = $request->validate([
-            'invoice_number'  => 'required|string|unique:invoices,invoice_number,' . $invoice->id,
-            'date'            => 'required|date',
-            'due_date'        => 'required|date',
-            'student_name'    => 'required|string|max:255',
-            'student_level'   => 'required|string|max:50',
-            'amount_received' => 'required|numeric|min:0',
-            'notes'           => 'nullable|string',
-            'items'           => 'required|array|min:1',
+            'invoice_number'      => 'required|string|unique:invoices,invoice_number,' . $invoice->id,
+            'date'                => 'required|date',
+            'due_date'            => 'required|date',
+            'student_name'        => 'required|string|max:255',
+            'student_level'       => 'required|string|max:50',
+            'notes'               => 'nullable|string',
+            'items'               => 'required|array|min:1',
             'items.*.description' => 'required|string',
             'items.*.amount'      => 'required|numeric|min:0',
-            'items.*.status'      => 'required|in:Lunas,Belum Lunas',
+            'items.*.discount_type'  => 'nullable|in:percentage,fixed',
+            'items.*.discount_value' => 'nullable|numeric|min:0',
+            'items.*.payments'       => 'nullable|array',
+            'items.*.payments.*.id'             => 'nullable|integer',
+            'items.*.payments.*.amount'         => 'required_with:items.*.payments|numeric|min:0',
+            'items.*.payments.*.payment_date'   => 'required_with:items.*.payments|date',
+            'items.*.payments.*.notes'           => 'nullable|string',
         ]);
 
         DB::beginTransaction();
         try {
-            $totalAmount = collect($validated['items'])->sum('amount');
-
             $invoice->update([
-                'invoice_number'  => $validated['invoice_number'],
-                'date'            => $validated['date'],
-                'due_date'        => $validated['due_date'],
-                'student_name'    => $validated['student_name'],
-                'student_level'   => $validated['student_level'],
-                'total_amount'    => $totalAmount,
-                'amount_received' => $validated['amount_received'],
-                'notes'           => $validated['notes'] ?? null,
+                'invoice_number' => $validated['invoice_number'],
+                'date'           => $validated['date'],
+                'due_date'       => $validated['due_date'],
+                'student_name'   => $validated['student_name'],
+                'student_level'  => $validated['student_level'],
+                'total_amount'   => 0,
+                'amount_received' => 0,
+                'notes'          => $validated['notes'] ?? null,
             ]);
 
             $invoice->items()->delete();
             foreach ($validated['items'] as $index => $item) {
-                $invoice->items()->create([
-                    'description' => $item['description'],
-                    'amount'      => $item['amount'],
-                    'status'      => $item['status'],
-                    'sort_order'  => $index,
+                $invoiceItem = $invoice->items()->create([
+                    'description'    => $item['description'],
+                    'amount'         => $item['amount'],
+                    'discount_type'  => $item['discount_type'] ?? null,
+                    'discount_value' => $item['discount_value'] ?? null,
+                    'sort_order'     => $index,
                 ]);
+
+                if (!empty($item['payments'])) {
+                    foreach ($item['payments'] as $payment) {
+                        $invoiceItem->payments()->create([
+                            'amount'       => $payment['amount'],
+                            'payment_date' => $payment['payment_date'],
+                            'notes'        => $payment['notes'] ?? null,
+                        ]);
+                    }
+                }
             }
 
+            $invoice->load('items.payments');
+            $invoice->save();
+
             DB::commit();
-            return response()->json($invoice->load('items'));
+            return response()->json($invoice);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Gagal mengupdate invoice: ' . $e->getMessage()], 500);
@@ -152,7 +186,7 @@ class InvoiceController extends Controller
     public function downloadPdf(Invoice $invoice)
     {
         try {
-            $invoice->load('items');
+            $invoice->load('items.payments');
             $setting = Setting::first();
 
             $pdf = Pdf::loadView('invoice-pdf', compact('invoice', 'setting'))

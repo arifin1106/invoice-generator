@@ -3,13 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { invoiceApi, settingApi } from '../services/api';
 import { formatRupiah, formatDate } from '../utils/format';
-import { ArrowLeft, FileDown, Pencil, Printer, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileDown, Pencil, Printer, Loader2, Share2, Copy, MessageCircle } from 'lucide-react';
 
 export default function InvoicePreview() {
   const { id }   = useParams();
   const navigate = useNavigate();
   const printRef = useRef();
   const [downloading, setDownloading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const { data: invoice, isLoading: loadingInv } = useQuery({
     queryKey: ['invoice', id],
@@ -28,11 +29,44 @@ export default function InvoicePreview() {
     setDownloading(true);
     try {
       await invoiceApi.downloadPdf(id, invoice?.invoice_number);
-    } catch (e) {
+    } catch {
       alert('Gagal mengunduh PDF. Coba lagi.');
     } finally {
       setDownloading(false);
     }
+  };
+
+  const getShareUrl = () => {
+    return window.location.origin + `/invoices/${id}/preview`;
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(getShareUrl());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+      const input = document.createElement('input');
+      input.value = getShareUrl();
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleWhatsApp = () => {
+    const text = `Invoice ${invoice?.invoice_number}\nSiswa: ${invoice?.student_name}\nTotal: ${formatRupiah(invoice?.total_amount)}\nSisa: ${formatRupiah(invoice?.remaining_balance)}\n\nLihat detail: ${getShareUrl()}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const handleEmail = () => {
+    const subject = `Invoice ${invoice?.invoice_number} - ${invoice?.student_name}`;
+    const body = `Yth Bapak/Ibu,\n\nBersama ini kami sampaikan invoice untuk ${invoice?.student_name}.\n\nNomor Invoice: ${invoice?.invoice_number}\nTotal: ${formatRupiah(invoice?.total_amount)}\nSisa Tagihan: ${formatRupiah(invoice?.remaining_balance)}\n\nSilakan lihat detail invoice pada link berikut:\n${getShareUrl()}\n\nTerima kasih.`;
+    window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
   };
 
   if (loadingInv) {
@@ -50,6 +84,27 @@ export default function InvoicePreview() {
 
   const statusMap = { paid: 'LUNAS', partial: 'SEBAGIAN', unpaid: 'BELUM LUNAS' };
   const statusCls = { paid: 'stamp-paid', partial: 'stamp-partial', unpaid: 'stamp-unpaid' };
+
+  // Compute discount totals
+  let totalBeforeDiscount = 0;
+  let totalDiscount = 0;
+  let totalPaid = 0;
+  const hasDiscount = invoice.items?.some((item) => item.discount_type && item.discount_value);
+
+  invoice.items?.forEach((item) => {
+    const amount = parseFloat(item.amount) || 0;
+    let disc = 0;
+    if (item.discount_type === 'percentage') {
+      disc = amount * ((parseFloat(item.discount_value) || 0) / 100);
+    } else if (item.discount_type === 'fixed') {
+      disc = Math.min(parseFloat(item.discount_value) || 0, amount);
+    }
+    totalBeforeDiscount += amount;
+    totalDiscount += disc;
+    totalPaid += parseFloat(item.paid_amount) || item.payments?.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0) || 0;
+  });
+
+  const hasPayments = invoice.items?.some((item) => item.payments?.length > 0);
 
   return (
     <div className="page preview-page">
@@ -76,12 +131,26 @@ export default function InvoicePreview() {
         </div>
       </div>
 
+      {/* Share Bar */}
+      <div className="share-bar no-print">
+        <span className="share-label"><Share2 size={14} /> Bagikan:</span>
+        <button className="btn btn-ghost btn-sm" onClick={handleWhatsApp}>
+          <MessageCircle size={14} /> WhatsApp
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={handleEmail}>
+          Email
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={handleCopyLink}>
+          <Copy size={14} /> {copied ? 'Tersalin!' : 'Salin Link'}
+        </button>
+      </div>
+
       {/* A4 Sheet */}
       <div className="a4-sheet" ref={printRef}>
         {/* Header */}
         <div className="inv-header">
           <div className="inv-logo-block">
-            <img src={logoSrc} alt="Logo" className="inv-logo" onError={(e) => { e.target.style.display='none'; }} />
+            {logoSrc && <img src={logoSrc} alt="Logo" className="inv-logo" onError={(e) => { e.target.style.display = 'none'; }} />}
             <div className="inv-inst-info">
               <h1 className="inv-inst-name">
                 {setting?.institution_name ?? 'Jakarta Cosmopolite Islamic School'}
@@ -144,22 +213,51 @@ export default function InvoicePreview() {
               <th className="th-no">#</th>
               <th>Keterangan</th>
               <th className="th-amount">Nominal</th>
+              {hasDiscount && <th className="th-amount">Diskon</th>}
+              <th className="th-amount">Dibayar</th>
               <th className="th-status">Status</th>
             </tr>
           </thead>
           <tbody>
-            {invoice.items?.map((item, i) => (
-              <tr key={item.id}>
-                <td className="td-no">{i + 1}</td>
-                <td>{item.description}</td>
-                <td className="td-amount">{formatRupiah(item.amount)}</td>
-                <td className="td-status">
-                  <span className={`badge ${item.status === 'Lunas' ? 'badge-paid' : 'badge-unpaid'}`}>
-                    {item.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {invoice.items?.map((item, i) => {
+              const amount = parseFloat(item.amount) || 0;
+              let disc = 0;
+              if (item.discount_type === 'percentage') {
+                disc = amount * ((parseFloat(item.discount_value) || 0) / 100);
+              } else if (item.discount_type === 'fixed') {
+                disc = Math.min(parseFloat(item.discount_value) || 0, amount);
+              }
+              const paid = parseFloat(item.paid_amount) || item.payments?.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0) || 0;
+              const itemStatus = item.status || (paid <= 0 ? 'Belum Lunas' : (paid >= amount - disc ? 'Lunas' : 'Sebagian'));
+
+              return (
+                <tr key={item.id}>
+                  <td className="td-no">{i + 1}</td>
+                  <td>
+                    {item.description}
+                    {disc > 0 && (
+                      <div className="item-sub-text discount-text">
+                        Diskon: {item.discount_type === 'percentage' ? `${item.discount_value}%` : formatRupiah(item.discount_value)} (-{formatRupiah(disc)})
+                      </div>
+                    )}
+                  </td>
+                  <td className="td-amount">{formatRupiah(item.amount)}</td>
+                  {hasDiscount && (
+                    <td className="td-amount">
+                      {disc > 0 ? <span className="text-red">-{formatRupiah(disc)}</span> : '-'}
+                    </td>
+                  )}
+                  <td className="td-amount">
+                    {paid > 0 ? <span className="text-green">{formatRupiah(paid)}</span> : '-'}
+                  </td>
+                  <td className="td-status">
+                    <span className={`badge ${itemStatus === 'Lunas' ? 'badge-paid' : itemStatus === 'Sebagian' ? 'badge-partial' : 'badge-unpaid'}`}>
+                      {itemStatus}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
@@ -167,21 +265,67 @@ export default function InvoicePreview() {
         <div className="inv-summary-wrapper">
           <table className="inv-summary">
             <tbody>
+              {hasDiscount && (
+                <>
+                  <tr>
+                    <td>Subtotal</td>
+                    <td>{formatRupiah(totalBeforeDiscount)}</td>
+                  </tr>
+                  <tr>
+                    <td>Total Diskon</td>
+                    <td className="text-red">-{formatRupiah(totalDiscount)}</td>
+                  </tr>
+                </>
+              )}
               <tr className="summary-total-row">
                 <td>Total</td>
                 <td>{formatRupiah(invoice.total_amount)}</td>
               </tr>
               <tr>
                 <td>Bayaran Diterima</td>
-                <td>{formatRupiah(invoice.amount_received)}</td>
+                <td className="text-green">{formatRupiah(totalPaid)}</td>
               </tr>
               <tr className="summary-remaining-row">
                 <td>Sisa Tagihan</td>
-                <td>{formatRupiah(invoice.remaining_balance)}</td>
+                <td className={invoice.remaining_balance > 0 ? 'text-red' : ''}>{formatRupiah(invoice.remaining_balance)}</td>
               </tr>
             </tbody>
           </table>
         </div>
+
+        {/* Payment History */}
+        {hasPayments && (
+          <div className="inv-payments-section">
+            <div className="inv-payments-title">Riwayat Pembayaran</div>
+            <table className="inv-payments-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Keterangan</th>
+                  <th>Tanggal</th>
+                  <th>Jumlah</th>
+                  <th>Catatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  let payNo = 0;
+                  return invoice.items?.flatMap((item) =>
+                    (item.payments || []).map((payment) => (
+                      <tr key={payment.id}>
+                        <td>{++payNo}</td>
+                        <td>{item.description}</td>
+                        <td>{formatDate(payment.payment_date)}</td>
+                        <td>{formatRupiah(payment.amount)}</td>
+                        <td>{payment.notes || '-'}</td>
+                      </tr>
+                    ))
+                  );
+                })()}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Notes */}
         {invoice.notes && (

@@ -80,4 +80,9 @@ export const receiptApi = {
   },
 };
 
+export const paymentCategoryApi = {
+  list:   ()       => api.get('/payment-categories'),
+  update: (data)   => api.put('/payment-categories', data),
+};
+
 export default api;

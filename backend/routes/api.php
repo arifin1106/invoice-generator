@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReceiptController;
+use App\Http\Controllers\Api\PaymentCategoryController;
 use Illuminate\Support\Facades\Route;
 
 // Public Auth routes
@@ -20,9 +21,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::post('/profile/photo', [ProfileController::class, 'uploadPhoto']);
     Route::delete('/profile/photo', [ProfileController::class, 'deletePhoto']);
+
     // Settings
     Route::get('/settings', [SettingController::class, 'show']);
     Route::post('/settings', [SettingController::class, 'update']);
+
+    // Payment Categories (Biaya Default)
+    Route::get('/payment-categories', [PaymentCategoryController::class, 'index']);
+    Route::put('/payment-categories', [PaymentCategoryController::class, 'update']);
 
     // Invoice number generator
     Route::get('/invoices/generate-number', [InvoiceController::class, 'generateNumber']);

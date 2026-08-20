@@ -11,26 +11,21 @@ body {
     color: #111;
     background: #fff;
 }
-/* Page container â€“ match A4 inner width exactly */
 .wrap {
     width: 174mm;
     margin: 0 auto;
     padding: 10mm 0 12mm;
 }
 
-/* ─── Institution name ─── */
 .inst-name  { font-size: 12pt; font-weight: 700; color: #000; margin-bottom: 3px; }
 .inst-detail{ font-size: 8pt; color: #222; line-height: 1.65; }
 
-/* ─── Logo ─── */
 .logo-img { height: 65px; width: auto; max-width: 200px; }
 
-/* ─── Divider with text ─── */
 .divider-row td { vertical-align: middle; font-size: 0; }
 .div-line  { border-top: 1.5px solid #000; height: 0; }
 .div-label { white-space: nowrap; font-size: 10pt; font-weight: 700; letter-spacing: 2px; padding: 0 9px; color: #000; }
 
-/* ─── Info boxes ─── */
 .info-box {
     border: 1px solid #888;
     padding: 5px 8px;
@@ -39,30 +34,34 @@ body {
 }
 .box-title { font-weight: 700; font-size: 8.5pt; margin-bottom: 2px; }
 
-/* ─── Items table ─── */
 .items { width: 100%; border-collapse: collapse; }
 .items th {
     border: 1px solid #888;
-    padding: 5px 6px;
-    font-size: 8.5pt;
+    padding: 4px 5px;
+    font-size: 8pt;
     font-weight: 700;
     background: #f2f2f2;
     text-align: left;
 }
 .items td {
     border: 1px solid #888;
-    padding: 5px 6px;
-    font-size: 8.5pt;
+    padding: 4px 5px;
+    font-size: 8pt;
 }
-.items .cn { width: 6%;  text-align: center; }
-.items .cd { width: 44%; }
-.items .ca { width: 27%; text-align: right; }
-.items .cs { width: 23%; }
+.items .cn { width: 4%;  text-align: center; }
+.items .cd { width: 30%; }
+.items .ca { width: 16%; text-align: right; }
+.items .cdisc { width: 14%; text-align: right; }
+.items .cpd { width: 16%; text-align: right; }
+.items .cs { width: 20%; text-align: center; }
 
-/* ─── Summary ─── */
+.item-sub { font-size: 7pt; color: #555; margin-top: 2px; line-height: 1.4; }
+.discount-text { color: #c0392b; }
+.paid-text { color: #27ae60; }
+
 .sum { width: 100%; border-collapse: collapse; border-top: 0; }
-.sum td { font-size: 8.5pt; padding: 4px 6px; }
-.sum .se { width: 27%; border: 0; }                   /* spacer (No+Desc) */
+.sum td { font-size: 8.5pt; padding: 4px 5px; }
+.sum .se { width: 34%; border: 0; }
 .sum .sl {
     width: 44%;
     border: 1px solid #888;
@@ -71,14 +70,16 @@ body {
     font-weight: 600;
 }
 .sum .sa {
-    width: 27%;
+    width: 22%;
     border: 1px solid #888;
     border-top: none;
     text-align: right;
     font-weight: 700;
 }
+.sum .sa-green { color: #27ae60; }
+.sum .sa-red { color: #c0392b; }
+.sum-total { background: #e8f4fd; }
 
-/* ─── Notes box ─── */
 .notes-box {
     border: 1px solid #888;
     padding: 6px 8px;
@@ -87,7 +88,6 @@ body {
 }
 .notes-title { font-weight: 700; font-size: 8.5pt; margin-bottom: 3px; }
 
-/* ─── Bank box ─── */
 .bank-box {
     border: 1.5px solid #111;
     padding: 6px 9px;
@@ -100,29 +100,45 @@ body {
 .bk { width: 100px; }
 .bc { width: 10px; }
 
-/* ─── Signature ─── */
 .sig-wrap { text-align: center; }
 .sig-img  { height: 60px; width: auto; max-width: 150px; }
 .sig-line { border-top: 1px solid #111; width: 130px; margin: 5px auto 3px; }
 .sig-name { font-size: 9pt; font-weight: 700; }
 .sig-ttl  { font-size: 8pt; color: #555; }
 
-/* ─── Spacing helpers ─── */
 .sp3 { height: 3mm; }
 .sp4 { height: 4mm; }
 .sp5 { height: 5mm; }
 .sp6 { height: 6mm; }
 .sp8 { height: 8mm; }
+
+.payments-box {
+    border: 1px solid #888;
+    padding: 5px 8px;
+    font-size: 7.5pt;
+    line-height: 1.5;
+}
+.payments-title { font-weight: 700; font-size: 8pt; margin-bottom: 3px; }
+.payments-tbl { width: 100%; border-collapse: collapse; }
+.payments-tbl th {
+    background: #f5f5f5;
+    border: 1px solid #aaa;
+    padding: 2px 4px;
+    font-size: 7pt;
+    font-weight: 700;
+    text-align: left;
+}
+.payments-tbl td {
+    border: 1px solid #aaa;
+    padding: 2px 4px;
+    font-size: 7pt;
+}
 </style>
 </head>
 <body>
 <div class="wrap">
 
 @php
-    /*
-     * Encode image to base64 data URI - safe closure (no named function = no redeclaration error).
-     * Detects extension to pick mime type, no GD required.
-     */
     $toBase64 = function($absPath) {
         if (!$absPath || !file_exists($absPath)) return '';
         $ext  = strtolower(pathinfo($absPath, PATHINFO_EXTENSION));
@@ -137,7 +153,6 @@ body {
         return $data ? 'data:' . $mime . ';base64,' . base64_encode($data) : '';
     };
 
-    /* Logo */
     $logoSrc = '';
     if ($setting && $setting->institution_logo) {
         $logoSrc = $toBase64(storage_path('app/public/' . $setting->institution_logo));
@@ -146,7 +161,6 @@ body {
         $logoSrc = $toBase64(public_path('asset/logo-JACOS.png'));
     }
 
-    /* Signature */
     $sigSrc = '';
     if ($setting && $setting->signer_signature) {
         $sigSrc = $toBase64(storage_path('app/public/' . $setting->signer_signature));
@@ -156,12 +170,31 @@ body {
     }
 
     $hasNote = !empty(trim($invoice->notes ?? '')) || !empty(trim($setting?->payment_message ?? ''));
+
+    $totalBeforeDiscount = 0;
+    $totalDiscount = 0;
+    $totalPaid = 0;
+    foreach ($invoice->items as $item) {
+        $itemDiscount = 0;
+        if ($item->discount_type && $item->discount_value) {
+            if ($item->discount_type === 'percentage') {
+                $itemDiscount = $item->amount * ($item->discount_value / 100);
+            } else {
+                $itemDiscount = min((float) $item->discount_value, (float) $item->amount);
+            }
+        }
+        $totalBeforeDiscount += (float) $item->amount;
+        $totalDiscount += $itemDiscount;
+        $totalPaid += (float) $item->payments->sum('amount');
+    }
+
+    $hasDiscount = $totalDiscount > 0;
+    $hasPayments = $invoice->items->flatMap->payments->count() > 0;
 @endphp
 
-{{-- â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â• --}}
+{{-- HEADER --}}
 <table style="width:100%; border-collapse:collapse;">
   <tr>
-    {{-- LEFT: institution info --}}
     <td style="vertical-align:top; width:60%;">
       <div class="inst-name">{{ $setting->institution_name ?? 'Jakarta Cosmopolite Islamic School' }}</div>
       <div class="inst-detail">
@@ -176,8 +209,6 @@ body {
         @endif
       </div>
     </td>
-
-    {{-- RIGHT: logo + invoice meta --}}
     <td style="vertical-align:top; width:40%; text-align:right;">
       @if($logoSrc)
         <img src="{{ $logoSrc }}" class="logo-img" alt="">
@@ -197,7 +228,7 @@ body {
 
 <div class="sp5"></div>
 
-{{-- â•â•â•â•â•â•â•â•â•â• INVOICE DIVIDER â•â•â•â•â•â•â•â•â•â• --}}
+{{-- INVOICE DIVIDER --}}
 <table style="width:100%; border-collapse:collapse;" class="divider-row">
   <tr>
     <td style="width:44%; height:2px;" class="div-line"></td>
@@ -208,7 +239,7 @@ body {
 
 <div class="sp4"></div>
 
-{{-- â•â•â•â•â•â•â•â•â•â• STUDENT + DUE DATE â•â•â•â•â•â•â•â•â•â• --}}
+{{-- STUDENT + DUE DATE --}}
 <table style="width:100%; border-collapse:collapse;">
   <tr>
     <td style="width:53%; vertical-align:top;">
@@ -229,48 +260,133 @@ body {
 
 <div class="sp4"></div>
 
-{{-- â•â•â•â•â•â•â•â•â•â• ITEMS TABLE â•â•â•â•â•â•â•â•â•â• --}}
+{{-- ITEMS TABLE --}}
 <table class="items">
   <thead>
     <tr>
       <th class="cn">No</th>
       <th class="cd">Keterangan</th>
       <th class="ca">Nominal</th>
-      <th class="cs">Keterangan</th>
+      @if($hasDiscount)
+      <th class="cdisc">Diskon</th>
+      @endif
+      <th class="cpd">Dibayar</th>
+      <th class="cs">Status</th>
     </tr>
   </thead>
   <tbody>
     @foreach($invoice->items as $i => $item)
+    @php
+        $itemDiscount = 0;
+        if ($item->discount_type && $item->discount_value) {
+            if ($item->discount_type === 'percentage') {
+                $itemDiscount = $item->amount * ($item->discount_value / 100);
+            } else {
+                $itemDiscount = min((float) $item->discount_value, (float) $item->amount);
+            }
+        }
+        $itemPaid = (float) $item->payments->sum('amount');
+        $itemFinal = (float) $item->amount - $itemDiscount;
+    @endphp
     <tr>
       <td class="cn">{{ $i + 1 }}</td>
-      <td class="cd">{{ $item->description }}</td>
+      <td class="cd">
+        {{ $item->description }}
+        @if($itemDiscount > 0)
+        <div class="item-sub discount-text">
+          Diskon: @if($item->discount_type === 'percentage'){{ $item->discount_value }}%@elseRp {{ number_format($item->discount_value, 0, ',', '.') }}@endif
+          (-Rp {{ number_format($itemDiscount, 0, ',', '.') }})
+        </div>
+        @endif
+      </td>
       <td class="ca">Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
-      <td class="cs">{{ $item->status }}</td>
+      @if($hasDiscount)
+      <td class="cdisc">
+        @if($itemDiscount > 0)
+          <span class="discount-text">-Rp {{ number_format($itemDiscount, 0, ',', '.') }}</span>
+        @else
+          -
+        @endif
+      </td>
+      @endif
+      <td class="cpd">
+        @if($itemPaid > 0)
+          <span class="paid-text">Rp {{ number_format($itemPaid, 0, ',', '.') }}</span>
+        @else
+          -
+        @endif
+      </td>
+      <td class="cs">{{ $item->status ?? ($itemPaid <= 0 ? 'Belum Lunas' : ($itemPaid >= $itemFinal ? 'Lunas' : 'Sebagian')) }}</td>
     </tr>
     @endforeach
   </tbody>
 </table>
 
-{{-- Summary rows: blank (No col 6% + Desc col 44%) | label | amount --}}
+{{-- Summary --}}
 <table class="sum">
+  @if($hasDiscount)
   <tr>
     <td class="se"></td>
-    <td class="sl" style="border-top: 1.5px solid #555; font-weight:700;">Total</td>
-    <td class="sa" style="border-top: 1.5px solid #555;">Rp {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
+    <td class="sl">Subtotal</td>
+    <td class="sa">Rp {{ number_format($totalBeforeDiscount, 0, ',', '.') }}</td>
+  </tr>
+  <tr>
+    <td class="se"></td>
+    <td class="sl">Total Diskon</td>
+    <td class="sa sa-red">-Rp {{ number_format($totalDiscount, 0, ',', '.') }}</td>
+  </tr>
+  @endif
+  <tr>
+    <td class="se"></td>
+    <td class="sl sum-total" style="border-top: 1.5px solid #555; font-weight:700;">Total</td>
+    <td class="sa sum-total" style="border-top: 1.5px solid #555;">Rp {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
   </tr>
   <tr>
     <td class="se"></td>
     <td class="sl">Bayaran Diterima</td>
-    <td class="sa">Rp {{ number_format($invoice->amount_received, 0, ',', '.') }}</td>
+    <td class="sa sa-green">Rp {{ number_format($totalPaid, 0, ',', '.') }}</td>
   </tr>
   <tr>
     <td class="se"></td>
     <td class="sl">Sisa Tagihan</td>
-    <td class="sa">Rp {{ number_format($invoice->remaining_balance, 0, ',', '.') }}</td>
+    <td class="sa @if($invoice->remaining_balance > 0)sa-red @endif">Rp {{ number_format($invoice->remaining_balance, 0, ',', '.') }}</td>
   </tr>
 </table>
 
-{{-- â•â•â•â•â•â•â•â•â•â• PESAN / NOTES â•â•â•â•â•â•â•â•â•â• --}}
+{{-- PAYMENTS HISTORY --}}
+@if($hasPayments)
+<div class="sp4"></div>
+<div class="payments-box">
+  <div class="payments-title">Riwayat Pembayaran</div>
+  <table class="payments-tbl">
+    <thead>
+      <tr>
+        <th style="width:5%;">No</th>
+        <th style="width:30%;">Keterangan</th>
+        <th style="width:25%;">Tanggal</th>
+        <th style="width:20%;">Jumlah</th>
+        <th style="width:20%;">Keterangan</th>
+      </tr>
+    </thead>
+    <tbody>
+      @php $payNo = 1; @endphp
+      @foreach($invoice->items as $item)
+        @foreach($item->payments as $payment)
+        <tr>
+          <td>{{ $payNo++ }}</td>
+          <td>{{ $item->description }}</td>
+          <td>{{ $payment->payment_date->format('d/m/Y') }}</td>
+          <td>Rp {{ number_format($payment->amount, 0, ',', '.') }}</td>
+          <td>{{ $payment->notes ?? '-' }}</td>
+        </tr>
+        @endforeach
+      @endforeach
+    </tbody>
+  </table>
+</div>
+@endif
+
+{{-- PESAN / NOTES --}}
 @if($hasNote)
 <div class="sp5"></div>
 <table style="width:100%; border-collapse:collapse;">
@@ -294,10 +410,9 @@ body {
 
 <div class="sp6"></div>
 
-{{-- â•â•â•â•â•â•â•â•â•â• FOOTER: bank left + logo+sig right â•â•â•â•â•â•â•â•â•â• --}}
+{{-- FOOTER --}}
 <table style="width:100%; border-collapse:collapse;">
   <tr>
-    {{-- Bank detail --}}
     <td style="width:54%; vertical-align:bottom;">
       @if($setting && ($setting->bank_name || $setting->bank_account_number))
       <div class="bank-box">
@@ -328,10 +443,7 @@ body {
       </div>
       @endif
     </td>
-
     <td style="width:8mm;"></td>
-
-    {{-- Logo + Signature --}}
     <td style="vertical-align:bottom; text-align:center;">
       <div class="sig-wrap">
         @if($sigSrc)
