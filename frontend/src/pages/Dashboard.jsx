@@ -117,17 +117,17 @@ export default function Dashboard() {
                 const sc = statusConfig[inv.status] ?? statusConfig.unpaid;
                 return (
                   <tr key={inv.id}>
-                    <td className="font-mono">{inv.invoice_number}</td>
-                    <td className="font-medium">{inv.student_name}</td>
-                    <td>{inv.student_level}</td>
-                    <td>{formatDate(inv.date)}</td>
-                    <td>{formatDate(inv.due_date)}</td>
-                    <td className="text-right">{formatRupiah(inv.total_amount)}</td>
-                    <td className="text-right">{formatRupiah(inv.remaining_balance)}</td>
-                    <td className="text-center">
+                    <td className="font-mono" data-label="No. Invoice">{inv.invoice_number}</td>
+                    <td className="font-medium" data-label="Nama Siswa">{inv.student_name}</td>
+                    <td data-label="Level">{inv.student_level}</td>
+                    <td data-label="Tanggal">{formatDate(inv.date)}</td>
+                    <td data-label="Jatuh Tempo">{formatDate(inv.due_date)}</td>
+                    <td className="text-right" data-label="Total">{formatRupiah(inv.total_amount)}</td>
+                    <td className="text-right" data-label="Sisa">{formatRupiah(inv.remaining_balance)}</td>
+                    <td className="text-center" data-label="Status">
                       <span className={`badge ${sc.className}`}>{sc.label}</span>
                     </td>
-                    <td>
+                    <td className="text-center" data-label="Aksi">
                       <div className="action-btns">
                         <button className="action-btn action-btn--view" title="Preview" onClick={() => navigate(`/invoices/${inv.id}/preview`)}><Eye size={15} /></button>
                         <button className="action-btn action-btn--edit" title="Edit" onClick={() => navigate(`/invoices/${inv.id}/edit`)}><Pencil size={15} /></button>

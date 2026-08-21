@@ -138,17 +138,17 @@ export default function ReceiptList() {
 
                   return (
                     <tr key={r.id}>
-                      <td className="font-mono">{r.receipt_number}</td>
-                      <td>{formatDate(r.date)}</td>
-                      <td className="font-medium">{r.received_from}</td>
-                      <td className="text-center">
+                      <td className="font-mono" data-label="No Kwitansi">{r.receipt_number}</td>
+                      <td data-label="Tanggal">{formatDate(r.date)}</td>
+                      <td className="font-medium" data-label="Diterima Dari">{r.received_from}</td>
+                      <td className="text-center" data-label="Kategori">
                         <span className="badge" style={{ background: badgeColor, color: textColor, border: `1px solid ${textColor}40` }}>
                           {r.payment_category || 'Lainnya'}
                         </span>
                       </td>
-                      <td className="text-right font-medium">{formatRupiah(r.amount)}</td>
-                      <td className="text-center">
-                        <div className="action-btns" style={{ justifyContent: 'center' }}>
+                      <td className="text-right font-medium" data-label="Nominal">{formatRupiah(r.amount)}</td>
+                      <td className="text-center" data-label="Aksi">
+                        <div className="action-btns">
                           <button className="action-btn action-btn--view" title="Preview" onClick={() => navigate(`/receipts/${r.id}/preview`)}><Eye size={15} /></button>
                           <button className="action-btn action-btn--edit" title="Edit" onClick={() => navigate(`/receipts/${r.id}/edit`)}><Pencil size={15} /></button>
                           <button className="action-btn action-btn--download" title="Download PDF" onClick={() => receiptApi.downloadPdf(r.id, r.receipt_number)}><FileDown size={15} /></button>

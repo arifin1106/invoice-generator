@@ -1744,117 +1744,143 @@ html { scroll-behavior: smooth; }
 /*  RESPONSIVE (TABLET & MOBILE)                            */
 /* ──────────────────────────────────────────────────────── */
 
-/* Tablet (max-width: 1024px) */
-@media (max-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 /* Mobile (max-width: 768px) */
 @media (max-width: 768px) {
+  /* ── Shell: sidebar menjadi off-canvas drawer ── */
   .app-shell {
     flex-direction: column;
   }
 
-  /* Sidebar as Header */
   .sidebar {
-    position: sticky;
-    width: 100%;
-    height: auto;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 16px;
-    border-right: none;
-    border-bottom: 1px solid var(--glass-border);
-    z-index: 100;
+    width: min(280px, 85vw);
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    z-index: 300;
+  }
+  .sidebar--open {
+    transform: translateX(0);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 250;
+    animation: fadeIn 0.2s ease;
   }
 
   .sidebar-brand {
-    padding: 0;
-    border: none;
+    padding: 16px 18px;
   }
-  .brand-text, .sidebar-toggle {
+  .brand-text,
+  .sidebar-toggle {
     display: none;
   }
-  .sidebar.sidebar--collapsed {
-    width: 100%;
-  }
-  .app-shell--collapsed .main-content {
-    margin-left: 0;
-  }
-
-  .sidebar-nav {
-    flex-direction: row;
-    gap: 12px;
-    padding: 0;
-  }
-  .nav-item {
-    padding: 8px;
-  }
-  .nav-item span {
-    display: none;
-  }
-
-  .sidebar-footer {
-    padding: 0;
-    border: none;
-    margin: 0;
-  }
-  .sidebar-footer span {
-    display: none;
-  }
-  .sidebar-footer .btn {
-    padding: 8px 12px;
-    width: auto;
+  .sidebar-close {
+    display: inline-flex;
   }
 
   .main-content {
     margin-left: 0;
   }
 
+  .topbar-menu-btn {
+    display: inline-flex;
+  }
+
+  .topbar {
+    padding: 0 16px;
+  }
+
   .page {
     padding: 16px;
   }
 
-  /* Dashboard & Forms */
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
+  /* ── Filter & pencarian ── */
   .filters-bar {
     flex-direction: column;
     align-items: stretch;
   }
   .filter-select {
     width: 100%;
+    min-height: 44px;
+  }
+  .search-input {
+    min-height: 44px;
   }
 
+  /* ── Form ── */
   .form-grid-2,
   .form-grid,
   .form-row-2 {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-
-  /* Table Overflow */
-  .table-card {
-    overflow-x: auto;
-  }
-  .data-table {
-    min-width: 800px; /* force scroll if screen is smaller */
+  input.form-input,
+  select.form-input {
+    min-height: 44px;
   }
 
-  /* Items editor mobile */
+  /* ── Tabel data menjadi card list ── */
+  .table-responsive {
+    overflow-x: visible;
+  }
+  .data-table thead {
+    display: none;
+  }
+  .data-table tbody tr {
+    display: block;
+    background: rgba(255,255,255,0.72);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 6px 14px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .data-table tbody tr:last-child { margin-bottom: 0; }
+  .data-table tbody tr:hover { background: rgba(255,255,255,0.88); }
+  .data-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .data-table tbody td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+  .data-table tbody td:last-child {
+    border-bottom: none;
+  }
+  .action-btns {
+    gap: 8px;
+  }
+  .action-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  /* ── Items editor (form invoice) ── */
   .item-row {
-    grid-template-columns: 24px 1fr 28px;
+    grid-template-columns: 24px 1fr 32px;
   }
   .item-row .item-status,
   .item-row .item-amount {
     grid-column: 2 / -1;
   }
   .payment-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
   .discount-inputs {
     flex-wrap: wrap;
@@ -1864,9 +1890,30 @@ html { scroll-behavior: smooth; }
     gap: 8px;
   }
 
-  /* Preview A4 on Mobile */
+  /* ── Settings: tabel kategori ── */
+  .category-table-header {
+    display: none;
+  }
+  .category-table-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 12px 14px;
+  }
+  .cat-col-name {
+    font-weight: 600;
+  }
+  .cat-col-amount .input-group {
+    display: flex;
+    width: 100%;
+  }
+  .cat-col-amount .input-group .form-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Preview A4: scale-to-fit + aksi bertumpuk ── */
   .preview-page {
-    overflow-x: auto;
+    overflow-x: hidden;
     padding-bottom: 30px;
   }
   .a4-sheet {
@@ -1887,6 +1934,26 @@ html { scroll-behavior: smooth; }
   .preview-action-right a {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
+  }
+  .share-bar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  /* ── Pagination ── */
+  .pagination {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .pagination .btn {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    right: 16px;
   }
 }
 
@@ -1901,7 +1968,7 @@ html { scroll-behavior: smooth; }
   }
 
   .login-box {
-    padding: 32px 24px;
+    padding: 32px 20px;
   }
 
   .login-title {
@@ -1909,10 +1976,14 @@ html { scroll-behavior: smooth; }
   }
 
   .stat-card {
-    padding: 16px;
+    padding: 14px;
   }
 
   .stat-value {
     font-size: 17px;
+  }
+
+  .action-btns {
+    flex-wrap: wrap;
   }
 }

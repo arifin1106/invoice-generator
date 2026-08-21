@@ -9,7 +9,6 @@ import {
   Receipt,
   X,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 import Topbar from './Topbar';
 import ProfileModal from './ProfileModal';
 

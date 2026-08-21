@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { invoiceApi, settingApi } from '../services/api';
 import { formatRupiah, formatDate } from '../utils/format';
 import { ArrowLeft, FileDown, Pencil, Printer, Loader2, Share2, Copy, MessageCircle } from 'lucide-react';
+import ScaleToFit from '../components/ScaleToFit';
 
 export default function InvoicePreview() {
   const { id }   = useParams();
@@ -146,7 +147,8 @@ export default function InvoicePreview() {
       </div>
 
       {/* A4 Sheet */}
-      <div className="a4-sheet" ref={printRef}>
+      <ScaleToFit>
+        <div className="a4-sheet" ref={printRef}>
         {/* Header */}
         <div className="inv-header">
           <div className="inv-logo-block">
@@ -361,6 +363,7 @@ export default function InvoicePreview() {
           </div>
         </div>
       </div>
+      </ScaleToFit>
     </div>
   );
 }

@@ -75,7 +75,7 @@ export default function ReceiptForm() {
       <div className="card" style={{ maxWidth: '800px' }}>
         <form onSubmit={handleSubmit} className="invoice-form">
           
-          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="form-grid">
             <div className="form-group">
               <label className="form-label">No. Kwitansi</label>
               <input

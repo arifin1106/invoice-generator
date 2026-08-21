@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { receiptApi, settingApi } from '../services/api';
 import { ArrowLeft, FileDown, Loader2 } from 'lucide-react';
 import { formatRupiah, formatDate } from '../utils/format';
+import ScaleToFit from '../components/ScaleToFit';
 
 export default function ReceiptPreview() {
   const { id } = useParams();
@@ -58,7 +59,8 @@ export default function ReceiptPreview() {
       </div>
 
       {/* A4 landscape sheet mockup */}
-      <div className="a4-sheet" style={{ maxWidth: '800px', margin: '20px auto', padding: '30px', position: 'relative' }}>
+      <ScaleToFit baseWidth={800}>
+        <div className="a4-sheet" style={{ maxWidth: '800px', margin: '20px auto', padding: '30px', position: 'relative' }}>
         <div style={{ border: '2px solid #000', padding: '30px', borderRadius: '8px' }}>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
@@ -117,8 +119,8 @@ export default function ReceiptPreview() {
             <div style={{ border: '2px solid #000', padding: '15px 25px', fontSize: '20pt', fontWeight: 'bold', borderRadius: '4px', background: '#fdfdfd' }}>
               {formatRupiah(receipt.amount)}
             </div>
-            
-            <div style={{ textAlign: 'center', width: '250px' }}>
+
+            <div style={{ textAlign: 'center', width: '250px', maxWidth: '45%' }}>
               <div style={{ marginBottom: '70px', fontSize: '12pt' }}>
                 {city}, {formatDate(receipt.date)}
               </div>
@@ -129,6 +131,7 @@ export default function ReceiptPreview() {
 
         </div>
       </div>
+      </ScaleToFit>
     </div>
   );
 }
