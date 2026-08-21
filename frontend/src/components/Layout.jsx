@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -7,6 +7,7 @@ import {
   GraduationCap,
   Menu,
   Receipt,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Topbar from './Topbar';
@@ -22,11 +23,25 @@ export default function Layout() {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [drawerOpen]);
 
   return (
     <div className={`app-shell ${isCollapsed ? 'app-shell--collapsed' : ''}`}>
       {/* Sidebar */}
-      <aside className={`sidebar ${isCollapsed ? 'sidebar--collapsed' : ''}`}>
+      <aside
+        className={`sidebar ${isCollapsed ? 'sidebar--collapsed' : ''} ${drawerOpen ? 'sidebar--open' : ''}`}
+      >
         {/* Brand */}
         <div className="sidebar-brand">
           <div className="brand-info">
@@ -38,8 +53,19 @@ export default function Layout() {
               <span className="brand-sub">Invoice System</span>
             </div>
           </div>
-          <button className="sidebar-toggle btn-ghost" onClick={() => setIsCollapsed(!isCollapsed)}>
+          <button
+            className="sidebar-toggle btn-ghost"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            aria-label="Ciutkan sidebar"
+          >
             <Menu size={20} />
+          </button>
+          <button
+            className="sidebar-close btn-ghost"
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Tutup menu"
+          >
+            <X size={20} />
           </button>
         </div>
 
@@ -68,9 +94,21 @@ export default function Layout() {
         </div>
       </aside>
 
+      {/* Drawer Backdrop */}
+      {drawerOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setDrawerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Main */}
       <main className="main-content">
-        <Topbar onOpenProfile={() => setProfileOpen(true)} />
+        <Topbar
+          onOpenProfile={() => setProfileOpen(true)}
+          onMenuClick={() => setDrawerOpen(true)}
+        />
         <Outlet />
       </main>
 

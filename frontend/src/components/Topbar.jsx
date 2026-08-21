@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { Settings, LogOut, ChevronDown, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function Topbar({ onOpenProfile }) {
+export default function Topbar({ onOpenProfile, onMenuClick }) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -22,6 +22,15 @@ export default function Topbar({ onOpenProfile }) {
 
   return (
     <header className="topbar">
+      {onMenuClick && (
+        <button
+          className="topbar-menu-btn"
+          onClick={onMenuClick}
+          aria-label="Buka menu navigasi"
+        >
+          <Menu size={20} />
+        </button>
+      )}
       <div className="topbar-spacer" />
 
       <div className="topbar-right" ref={ref}>
