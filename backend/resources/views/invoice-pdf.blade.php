@@ -294,7 +294,7 @@ body {
         {{ $item->description }}
         @if($itemDiscount > 0)
         <div class="item-sub discount-text">
-          Diskon: @if($item->discount_type === 'percentage'){{ $item->discount_value }}%@elseRp {{ number_format($item->discount_value, 0, ',', '.') }}@endif
+          Diskon: @if($item->discount_type === 'percentage'){{ $item->discount_value }}%@else Rp {{ number_format($item->discount_value, 0, ',', '.') }}@endif
           (-Rp {{ number_format($itemDiscount, 0, ',', '.') }})
         </div>
         @endif
