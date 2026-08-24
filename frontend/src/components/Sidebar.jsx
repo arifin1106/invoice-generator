@@ -37,12 +37,12 @@ const NAV = [
 export default function Sidebar() {
   return (
     <aside className="sidebar">
-      <div className="sidebar-logo">
-        <h1>
-          Invoice<br />Generator
-          <span className="sidebar-badge">JCoS</span>
+      <div className="sidebar-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '0.5rem', padding: '1rem 0' }}>
+        <img src="/logo.png" alt="JCoS Logo" style={{ width: '80px', height: 'auto', objectFit: 'contain' }} />
+        <h1 style={{ fontSize: '1.25rem', marginTop: '0.5rem' }}>
+          JCoS Invoice
         </h1>
-        <span>Jakarta Cosmopolite Islamic School</span>
+        <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>Jakarta Cosmopolite Islamic School</span>
       </div>
 
       <nav className="sidebar-nav">

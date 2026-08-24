@@ -32,10 +32,8 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-box">
-        <div className="login-header">
-          <div className="brand-icon login-icon">
-            <GraduationCap size={32} />
-          </div>
+        <div className="login-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+          <img src="/logo.png" alt="JCoS Logo" style={{ width: '80px', height: 'auto', objectFit: 'contain', marginBottom: '1rem' }} />
           <h1 className="login-title">JCoS Invoice</h1>
           <p className="login-subtitle">Silakan login untuk mengakses sistem</p>
         </div>
