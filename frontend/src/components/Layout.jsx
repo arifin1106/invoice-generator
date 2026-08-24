@@ -45,10 +45,10 @@ export default function Layout() {
         <div className="sidebar-brand">
           <div className="brand-info">
             <div className="brand-icon">
-              <GraduationCap size={22} />
+              <img src="/logo.png" alt="JACOS Logo" style={{ width: '50px', height: 'auto', objectFit: 'contain' }} />
             </div>
             <div className="brand-text">
-              <span className="brand-title">JCoS</span>
+              <span className="brand-title">JACOS</span>
               <span className="brand-sub">Invoice System</span>
             </div>
           </div>
