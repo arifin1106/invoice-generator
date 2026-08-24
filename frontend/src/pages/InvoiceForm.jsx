@@ -25,6 +25,7 @@ export default function InvoiceForm() {
   const isEdit     = Boolean(id);
   const [toast, setToast] = useState(null);
   const [expandedItems, setExpandedItems] = useState({});
+  const [activeRowIndex, setActiveRowIndex] = useState(null);
 
   const { register, handleSubmit, control, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
@@ -99,6 +100,35 @@ export default function InvoiceForm() {
   // Toggle expand/collapse for item payments
   const toggleExpand = (index) => {
     setExpandedItems((prev) => ({ ...prev, [index]: !prev[index] }));
+  };
+
+  // Quick add: isi baris yang sedang difokuskan; fallback baris kosong tunggal; terakhir tambah baris baru
+  const handleQuickAdd = (cat) => {
+    const idx = activeRowIndex !== null && fields[activeRowIndex] ? activeRowIndex : null;
+
+    if (idx !== null) {
+      setValue(`items.${idx}.description`, cat.name, { shouldValidate: true });
+      setValue(`items.${idx}.amount`, cat.default_amount);
+      return;
+    }
+
+    const onlyOneEmptyRow =
+      fields.length === 1 &&
+      !watchedItems[0]?.description &&
+      !(parseFloat(watchedItems[0]?.amount) || 0);
+
+    if (onlyOneEmptyRow) {
+      setValue('items.0.description', cat.name, { shouldValidate: true });
+      setValue('items.0.amount', cat.default_amount);
+      return;
+    }
+
+    append({
+      ...defaultItem,
+      description: cat.name,
+      amount: cat.default_amount,
+      payments: [],
+    });
   };
 
   // Auto-calculate totals
@@ -294,14 +324,7 @@ export default function InvoiceForm() {
                             key={cat.id}
                             type="button"
                             className="category-chip"
-                            onClick={() => {
-                              append({
-                                ...defaultItem,
-                                description: cat.name,
-                                amount: cat.default_amount,
-                                payments: [],
-                              });
-                            }}
+                            onClick={() => handleQuickAdd(cat)}
                           >
                             {cat.name} - {formatRupiah(cat.default_amount)}
                           </button>
@@ -337,6 +360,7 @@ export default function InvoiceForm() {
                           <input
                             className="form-input"
                             placeholder="Nama biaya (contoh: Registration Fee)"
+                            onFocus={() => setActiveRowIndex(index)}
                             {...register(`items.${index}.description`, { required: true })}
                           />
                         </div>
@@ -346,6 +370,7 @@ export default function InvoiceForm() {
                             className="form-input text-right"
                             placeholder="0"
                             min="0"
+                            onFocus={() => setActiveRowIndex(index)}
                             {...register(`items.${index}.amount`, { min: 0 })}
                           />
                         </div>
