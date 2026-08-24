@@ -8,6 +8,7 @@ class PaymentCategory extends Model
 {
     protected $fillable = [
         'name',
+        'student_level',
         'default_amount',
         'is_active',
     ];

@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Receipt;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\URL;
 
 class ReceiptController extends Controller
 {
+    private const SHARE_URL_DAYS = 7;
+
     /**
      * Display a listing of receipts.
      */
@@ -141,6 +145,27 @@ class ReceiptController extends Controller
         $pdf->setPaper('A4', 'landscape'); // Kwitansi usually half A4 or landscape
         
         return $pdf->download('Kwitansi-' . str_replace('/', '-', $receipt->receipt_number) . '.pdf');
+    }
+
+    /**
+     * Generate signed public share URL for receipt PDF.
+     */
+    public function shareUrl(Receipt $receipt): JsonResponse
+    {
+        $expiresAt = now()->addDays(self::SHARE_URL_DAYS);
+
+        return response()->json([
+            'url'        => URL::temporarySignedRoute('public.receipts.pdf', $expiresAt, ['receipt' => $receipt->id]),
+            'expires_at' => $expiresAt->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Public (signed) PDF download — same output as authenticated download.
+     */
+    public function publicPdf(Receipt $receipt)
+    {
+        return $this->downloadPdf($receipt);
     }
 
     /**

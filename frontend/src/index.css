@@ -1154,6 +1154,11 @@ body::before {
   color: var(--text-muted);
   white-space: nowrap;
 }
+.category-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
 .category-chip {
   background: var(--azure-100);
   color: var(--azure-700);
@@ -1222,6 +1227,55 @@ body::before {
   font-size: 12px;
   color: var(--text-muted);
   font-weight: 600;
+}
+
+.category-matrix {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+.category-matrix-header,
+.category-matrix-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1.2fr) repeat(5, minmax(118px, 1fr));
+  gap: 8px;
+  align-items: center;
+}
+.category-matrix-header {
+  min-width: 640px;
+  padding: 10px 14px;
+  background: var(--surface-3);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.category-matrix-row {
+  min-width: 640px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.category-matrix-row:last-child {
+  border-bottom: none;
+}
+.cat-mx-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+.cat-mx-level {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+}
+.cat-mx-cell {
+  display: flex;
+  align-items: center;
+}
+.input-group--compact .form-input {
+  min-width: 0;
 }
 .input-group .input-prefix + .form-input {
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;

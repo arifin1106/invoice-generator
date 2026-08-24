@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\Route;
 // Public Auth routes
 Route::post('/login', [AuthController::class, 'login']);
 
+// Public signed PDF (untuk dibagikan via WhatsApp tanpa login)
+Route::get('/public/invoices/{invoice}/pdf', [InvoiceController::class, 'publicPdf'])
+    ->middleware('signed')->name('public.invoices.pdf');
+Route::get('/public/receipts/{receipt}/pdf', [ReceiptController::class, 'publicPdf'])
+    ->middleware('signed')->name('public.receipts.pdf');
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -38,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // PDF Download
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf']);
+    Route::get('/invoices/{invoice}/share-url', [InvoiceController::class, 'shareUrl']);
 
     // Receipt number generator
     Route::get('/receipts/generate-number', [ReceiptController::class, 'generateNumber']);
@@ -47,4 +54,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Receipt PDF Download
     Route::get('/receipts/{receipt}/pdf', [ReceiptController::class, 'downloadPdf']);
+    Route::get('/receipts/{receipt}/share-url', [ReceiptController::class, 'shareUrl']);
 });

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { invoiceApi, settingApi } from '../services/api';
 import { formatRupiah, formatDate } from '../utils/format';
+import { sharePdfViaWhatsApp } from '../utils/share';
 import { ArrowLeft, FileDown, Pencil, Printer, Loader2, Share2, Copy, MessageCircle } from 'lucide-react';
 import ScaleToFit from '../components/ScaleToFit';
 
@@ -11,7 +12,9 @@ export default function InvoicePreview() {
   const navigate = useNavigate();
   const printRef = useRef();
   const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareLink, setShareLink] = useState('');
 
   const { data: invoice, isLoading: loadingInv } = useQuery({
     queryKey: ['invoice', id],
@@ -37,36 +40,62 @@ export default function InvoicePreview() {
     }
   };
 
-  const getShareUrl = () => {
-    return window.location.origin + `/invoices/${id}/preview`;
+  const getShareUrl = async () => {
+    if (shareLink) return shareLink;
+    const { data } = await invoiceApi.shareUrl(id);
+    setShareLink(data.url);
+    return data.url;
   };
+
+  const buildShareText = (url) =>
+    `Invoice ${invoice?.invoice_number}\nSiswa: ${invoice?.student_name}\nTotal: ${formatRupiah(invoice?.total_amount)}\nSisa: ${formatRupiah(invoice?.remaining_balance)}\n\nUnduh PDF invoice:\n${url}`;
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(getShareUrl());
+      const url = await getShareUrl();
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        const input = document.createElement('input');
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback
-      const input = document.createElement('input');
-      input.value = getShareUrl();
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand('copy');
-      document.body.removeChild(input);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      alert('Gagal membuat link berbagi. Coba lagi.');
     }
   };
 
-  const handleWhatsApp = () => {
-    const text = `Invoice ${invoice?.invoice_number}\nSiswa: ${invoice?.student_name}\nTotal: ${formatRupiah(invoice?.total_amount)}\nSisa: ${formatRupiah(invoice?.remaining_balance)}\n\nLihat detail: ${getShareUrl()}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  const handleWhatsApp = async () => {
+    if (sharing) return;
+    setSharing(true);
+    try {
+      const url = await getShareUrl();
+      await sharePdfViaWhatsApp({
+        endpoint: `/invoices/${id}/pdf`,
+        filename: `Invoice-${(invoice?.invoice_number || id).replace(/\//g, '-')}.pdf`,
+        text: buildShareText(url),
+      });
+    } catch {
+      alert('Gagal mengirim PDF via WhatsApp. Coba lagi.');
+    } finally {
+      setSharing(false);
+    }
   };
 
-  const handleEmail = () => {
+  const handleEmail = async () => {
+    let url = '';
+    try {
+      url = await getShareUrl();
+    } catch {
+      url = window.location.origin + `/invoices/${id}/preview`;
+    }
     const subject = `Invoice ${invoice?.invoice_number} - ${invoice?.student_name}`;
-    const body = `Yth Bapak/Ibu,\n\nBersama ini kami sampaikan invoice untuk ${invoice?.student_name}.\n\nNomor Invoice: ${invoice?.invoice_number}\nTotal: ${formatRupiah(invoice?.total_amount)}\nSisa Tagihan: ${formatRupiah(invoice?.remaining_balance)}\n\nSilakan lihat detail invoice pada link berikut:\n${getShareUrl()}\n\nTerima kasih.`;
+    const body = `Yth Bapak/Ibu,\n\nBersama ini kami sampaikan invoice untuk ${invoice?.student_name}.\n\nNomor Invoice: ${invoice?.invoice_number}\nTotal: ${formatRupiah(invoice?.total_amount)}\nSisa Tagihan: ${formatRupiah(invoice?.remaining_balance)}\n\nSilakan unduh PDF invoice pada link berikut:\n${url}\n\nTerima kasih.`;
     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
   };
 
@@ -135,14 +164,15 @@ export default function InvoicePreview() {
       {/* Share Bar */}
       <div className="share-bar no-print">
         <span className="share-label"><Share2 size={14} /> Bagikan:</span>
-        <button className="btn btn-ghost btn-sm" onClick={handleWhatsApp}>
-          <MessageCircle size={14} /> WhatsApp
+        <button className="btn btn-ghost btn-sm" onClick={handleWhatsApp} disabled={sharing}>
+          {sharing ? <Loader2 size={14} className="spin-icon" /> : <MessageCircle size={14} />}
+          {sharing ? 'Menyiapkan...' : 'Kirim PDF via WhatsApp'}
         </button>
         <button className="btn btn-ghost btn-sm" onClick={handleEmail}>
           Email
         </button>
         <button className="btn btn-ghost btn-sm" onClick={handleCopyLink}>
-          <Copy size={14} /> {copied ? 'Tersalin!' : 'Salin Link'}
+          <Copy size={14} /> {copied ? 'Tersalin!' : 'Salin Link PDF'}
         </button>
       </div>
 

@@ -34,6 +34,7 @@ export const invoiceApi = {
   remove:         (id)     => api.delete(`/invoices/${id}`),
   generateNumber: ()       => api.get('/invoices/generate-number'),
   pdfUrl:         (id)     => `${api.defaults.baseURL}/invoices/${id}/pdf`,
+  shareUrl:       (id)     => api.get(`/invoices/${id}/share-url`),
   downloadPdf: async (id, invoiceNumber) => {
     const response = await api.get(
       `/invoices/${id}/pdf`,
@@ -63,6 +64,7 @@ export const receiptApi = {
   update:         (id, data) => api.put(`/receipts/${id}`, data),
   remove:         (id)     => api.delete(`/receipts/${id}`),
   generateNumber: ()       => api.get('/receipts/generate-number'),
+  shareUrl:       (id)     => api.get(`/receipts/${id}/share-url`),
   downloadPdf: async (id, receiptNumber) => {
     const response = await api.get(
       `/receipts/${id}/pdf`,

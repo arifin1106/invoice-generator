@@ -10,9 +10,12 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 
 class InvoiceController extends Controller
 {
+    private const SHARE_URL_DAYS = 7;
+
     public function index(Request $request): JsonResponse
     {
         $query = Invoice::with('items');
@@ -201,6 +204,21 @@ class InvoiceController extends Controller
                 'line' => $e->getLine()
             ], 500);
         }
+    }
+
+    public function shareUrl(Invoice $invoice): JsonResponse
+    {
+        $expiresAt = now()->addDays(self::SHARE_URL_DAYS);
+
+        return response()->json([
+            'url'        => URL::temporarySignedRoute('public.invoices.pdf', $expiresAt, ['invoice' => $invoice->id]),
+            'expires_at' => $expiresAt->toIso8601String(),
+        ]);
+    }
+
+    public function publicPdf(Invoice $invoice)
+    {
+        return $this->downloadPdf($invoice);
     }
 
     public function generateNumber(): JsonResponse

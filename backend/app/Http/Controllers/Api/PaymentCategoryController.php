@@ -9,10 +9,11 @@ use Illuminate\Http\Request;
 
 class PaymentCategoryController extends Controller
 {
+    private const LEVEL_ORDER = ['P1', 'P2', 'K1', 'K2', 'Primary'];
+
     public function index(): JsonResponse
     {
-        $categories = PaymentCategory::orderBy('id')->get();
-        return response()->json($categories);
+        return response()->json($this->ordered());
     }
 
     public function update(Request $request): JsonResponse
@@ -29,6 +30,15 @@ class PaymentCategoryController extends Controller
             ]);
         }
 
-        return response()->json(PaymentCategory::orderBy('id')->get());
+        return response()->json($this->ordered());
+    }
+
+    private function ordered()
+    {
+        $rank = array_flip(self::LEVEL_ORDER);
+
+        return PaymentCategory::all()
+            ->sortBy(fn (PaymentCategory $cat) => [$cat->name, $rank[$cat->student_level] ?? count($rank)])
+            ->values();
     }
 }

@@ -2,13 +2,17 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { receiptApi, settingApi } from '../services/api';
-import { ArrowLeft, FileDown, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileDown, Loader2, Share2, Copy, MessageCircle } from 'lucide-react';
 import { formatRupiah, formatDate } from '../utils/format';
+import { sharePdfViaWhatsApp } from '../utils/share';
 import ScaleToFit from '../components/ScaleToFit';
 
 export default function ReceiptPreview() {
   const { id } = useParams();
   const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [shareLink, setShareLink] = useState('');
 
   const { data: receipt, isLoading: receiptLoading } = useQuery({
     queryKey: ['receipt', id],
@@ -36,6 +40,51 @@ export default function ReceiptPreview() {
     }
   };
 
+  const getShareUrl = async () => {
+    if (shareLink) return shareLink;
+    const { data } = await receiptApi.shareUrl(id);
+    setShareLink(data.url);
+    return data.url;
+  };
+
+  const handleWhatsApp = async () => {
+    if (sharing) return;
+    setSharing(true);
+    try {
+      const url = await getShareUrl();
+      await sharePdfViaWhatsApp({
+        endpoint: `/receipts/${id}/pdf`,
+        filename: `Kwitansi-${receipt.receipt_number.replace(/\//g, '-')}.pdf`,
+        text: `Kwitansi ${receipt.receipt_number}\nTelah terima dari: ${receipt.received_from}\nJumlah: ${formatRupiah(receipt.amount)}\n\nUnduh PDF kwitansi:\n${url}`,
+      });
+    } catch (e) {
+      console.error(e);
+      alert('Gagal mengirim PDF via WhatsApp. Coba lagi.');
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      const url = await getShareUrl();
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        const input = document.createElement('input');
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      alert('Gagal membuat link berbagi. Coba lagi.');
+    }
+  };
+
   const city = setting?.institution_address ? setting.institution_address.split(',')[0] : 'Jakarta';
 
   return (
@@ -56,6 +105,18 @@ export default function ReceiptPreview() {
             {downloading ? 'Mengunduh...' : 'Download PDF'}
           </button>
         </div>
+      </div>
+
+      {/* Share Bar */}
+      <div className="share-bar no-print">
+        <span className="share-label"><Share2 size={14} /> Bagikan:</span>
+        <button className="btn btn-ghost btn-sm" onClick={handleWhatsApp} disabled={sharing}>
+          {sharing ? <Loader2 size={14} className="spin-icon" /> : <MessageCircle size={14} />}
+          {sharing ? 'Menyiapkan...' : 'Kirim PDF via WhatsApp'}
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={handleCopyLink}>
+          <Copy size={14} /> {copied ? 'Tersalin!' : 'Salin Link PDF'}
+        </button>
       </div>
 
       {/* A4 landscape sheet mockup */}

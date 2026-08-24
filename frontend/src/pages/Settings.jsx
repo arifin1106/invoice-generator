@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { settingApi, paymentCategoryApi } from '../services/api';
+import { LEVELS } from '../utils/constants';
 import { Save, Building2, CreditCard, PenLine, Coins } from 'lucide-react';
 
 export default function Settings() {
@@ -26,6 +27,16 @@ export default function Settings() {
   const [logoFile, setLogoFile] = useState(null);
   const [sigFile, setSigFile] = useState(null);
   const [catAmounts, setCatAmounts] = useState({});
+
+  const groupedCategories = useMemo(() => {
+    if (!categories) return [];
+    const map = new Map();
+    categories.forEach((cat) => {
+      if (!map.has(cat.name)) map.set(cat.name, []);
+      map.get(cat.name).push(cat);
+    });
+    return Array.from(map.entries()).map(([name, items]) => ({ name, items }));
+  }, [categories]);
 
   useEffect(() => {
     if (setting) {
@@ -211,32 +222,40 @@ export default function Settings() {
               <Coins size={18} className="section-icon" />
               <h2 className="section-title">Biaya Default</h2>
             </div>
-            <p className="section-desc">Atur harga default untuk setiap kategori biaya. Harga ini akan muncul sebagai opsi quick-add saat membuat invoice baru.</p>
+            <p className="section-desc">Atur harga default setiap kategori biaya per tingkat kelas. Harga ini akan muncul sebagai opsi quick-add saat membuat invoice baru sesuai level siswa.</p>
 
             {loadingCategories ? (
               <div className="spinner" />
             ) : (
               <>
-                <div className="category-table">
-                  <div className="category-table-header">
-                    <span className="cat-col-name">Kategori</span>
-                    <span className="cat-col-amount">Harga Default</span>
+                <div className="category-matrix">
+                  <div className="category-matrix-header">
+                    <span className="cat-mx-name">Kategori</span>
+                    {LEVELS.map((level) => (
+                      <span key={level} className="cat-mx-level">{level}</span>
+                    ))}
                   </div>
-                  {categories?.map((cat) => (
-                    <div key={cat.id} className="category-table-row">
-                      <span className="cat-col-name">{cat.name}</span>
-                      <div className="cat-col-amount">
-                        <div className="input-group">
-                          <span className="input-prefix">Rp</span>
-                          <input
-                            type="number"
-                            className="form-input text-right"
-                            min="0"
-                            value={catAmounts[cat.id] ?? ''}
-                            onChange={(e) => handleCategoryAmountChange(cat.id, e.target.value)}
-                          />
-                        </div>
-                      </div>
+                  {groupedCategories.map((group) => (
+                    <div key={group.name} className="category-matrix-row">
+                      <span className="cat-mx-name">{group.name}</span>
+                      {LEVELS.map((level) => {
+                        const cat = group.items.find((c) => c.student_level === level);
+                        if (!cat) return <div key={level} className="cat-mx-cell" />;
+                        return (
+                          <div key={level} className="cat-mx-cell">
+                            <div className="input-group input-group--compact">
+                              <span className="input-prefix">Rp</span>
+                              <input
+                                type="number"
+                                className="form-input text-right"
+                                min="0"
+                                value={catAmounts[cat.id] ?? ''}
+                                onChange={(e) => handleCategoryAmountChange(cat.id, e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   ))}
                 </div>

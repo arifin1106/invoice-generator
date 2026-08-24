@@ -4,9 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { invoiceApi, paymentCategoryApi } from '../services/api';
 import { formatRupiah, toInputDate } from '../utils/format';
+import { LEVELS } from '../utils/constants';
 import { Plus, Trash2, Save, ArrowLeft, RefreshCw, ChevronDown, ChevronUp, Wallet } from 'lucide-react';
-
-const LEVELS = ['P1', 'P2', 'K1', 'K2', 'SD 1', 'SD 2', 'SD 3', 'SD 4', 'SD 5', 'SD 6'];
 
 const defaultItem = {
   description: '',
@@ -104,6 +103,7 @@ export default function InvoiceForm() {
 
   // Auto-calculate totals
   const watchedItems = watch('items') || [];
+  const watchedLevel = watch('student_level');
   const computed = watchedItems.reduce(
     (acc, item) => {
       const amount      = parseFloat(item.amount) || 0;
@@ -284,24 +284,32 @@ export default function InvoiceForm() {
 
               {categories && categories.length > 0 && (
                 <div className="category-quick-add">
-                  <span className="category-label">Quick add:</span>
-                  {categories.filter((c) => c.is_active).map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      className="category-chip"
-                      onClick={() => {
-                        append({
-                          ...defaultItem,
-                          description: cat.name,
-                          amount: cat.default_amount,
-                          payments: [],
-                        });
-                      }}
-                    >
-                      {cat.name} - {formatRupiah(cat.default_amount)}
-                    </button>
-                  ))}
+                  {watchedLevel ? (
+                    <>
+                      <span className="category-label">Quick add ({watchedLevel}):</span>
+                      {categories
+                        .filter((c) => c.is_active && c.student_level === watchedLevel)
+                        .map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            className="category-chip"
+                            onClick={() => {
+                              append({
+                                ...defaultItem,
+                                description: cat.name,
+                                amount: cat.default_amount,
+                                payments: [],
+                              });
+                            }}
+                          >
+                            {cat.name} - {formatRupiah(cat.default_amount)}
+                          </button>
+                        ))}
+                    </>
+                  ) : (
+                    <span className="category-hint">Pilih Level / Kelas terlebih dahulu untuk melihat biaya cepat.</span>
+                  )}
                 </div>
               )}
 

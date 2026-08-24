@@ -3,7 +3,7 @@
 Generator invoice & kwitansi sekolah untuk Jakarta Cosmopolite Islamic School (JCoS). Dua aplikasi independen dalam satu repo, tanpa tooling bersama:
 
 - `frontend/` — SPA React 19 + Vite, JSX biasa (tanpa TS). Semua styling ada di `src/index.css` (`src/App.css` adalah boilerplate Vite yang tidak terpakai). Linter adalah **oxlint** (`npm run lint`), bukan eslint.
-- `backend/` — API REST Laravel 13 + Sanctum (token auth), `barryvdh/laravel-dompdf` untuk PDF. `.env` lokal menggunakan **MySQL** (`invoice_generator`); `.env.example` default ke sqlite — jangan menyalinnya sembarangan.
+- `backend/` — API REST Laravel 13 + Sanctum (token auth), `barryvdh/laravel-dompdf` untuk PDF. Database adalah **PostgreSQL di Supabase** via `DB_URL` (pooler port 6543, `DB_SSLMODE=require`) — hindari SQL khusus MySQL (mis. `FIELD()`); `.env.example` berisi template Supabase yang sama.
 
 ## Menjalankan secara lokal (dua server)
 - Backend (port 8000): `cd backend && composer install && php artisan serve` (+ `php artisan migrate`, `php artisan storage:link`).
