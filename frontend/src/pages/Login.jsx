@@ -34,7 +34,7 @@ export default function Login() {
       <div className="login-box">
         <div className="login-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
           <img src="/logo.png" alt="JCoS Logo" style={{ width: '80px', height: 'auto', objectFit: 'contain', marginBottom: '1rem' }} />
-          <h1 className="login-title">JCoS Invoice</h1>
+          <h1 className="login-title">JACOS Invoice</h1>
           <p className="login-subtitle">Silakan login untuk mengakses sistem</p>
         </div>
 
