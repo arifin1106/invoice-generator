@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { receiptApi } from '../services/api';
+import CurrencyInput from '../components/CurrencyInput';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 
 export default function ReceiptForm() {
@@ -112,14 +113,12 @@ export default function ReceiptForm() {
 
           <div className="form-group mt-3">
             <label className="form-label">Nominal (Rp)</label>
-            <input
-              type="number"
+            <CurrencyInput
               className="form-input"
               required
-              min="0"
               placeholder="Contoh: 150000"
               value={formData.amount}
-              onChange={e => setFormData({ ...formData, amount: e.target.value })}
+              onValueChange={(v) => setFormData((p) => ({ ...p, amount: v }))}
             />
             <p className="text-muted" style={{ fontSize: '12px', marginTop: '4px' }}>
               *Terbilang (huruf) akan digenerate otomatis oleh sistem pada PDF.

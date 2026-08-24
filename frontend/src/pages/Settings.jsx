@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { settingApi, paymentCategoryApi } from '../services/api';
 import { LEVELS } from '../utils/constants';
+import CurrencyInput from '../components/CurrencyInput';
 import { Save, Building2, CreditCard, PenLine, Coins } from 'lucide-react';
 
 export default function Settings() {
@@ -245,12 +246,10 @@ export default function Settings() {
                           <div key={level} className="cat-mx-cell">
                             <div className="input-group input-group--compact">
                               <span className="input-prefix">Rp</span>
-                              <input
-                                type="number"
+                              <CurrencyInput
                                 className="form-input text-right"
-                                min="0"
-                                value={catAmounts[cat.id] ?? ''}
-                                onChange={(e) => handleCategoryAmountChange(cat.id, e.target.value)}
+                                value={catAmounts[cat.id]}
+                                onValueChange={(v) => handleCategoryAmountChange(cat.id, v)}
                               />
                             </div>
                           </div>

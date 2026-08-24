@@ -5,6 +5,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { invoiceApi, paymentCategoryApi } from '../services/api';
 import { formatRupiah, toInputDate } from '../utils/format';
 import { LEVELS } from '../utils/constants';
+import CurrencyInput from '../components/CurrencyInput';
 import { Plus, Trash2, Save, ArrowLeft, RefreshCw, ChevronDown, ChevronUp, Wallet } from 'lucide-react';
 
 const defaultItem = {
@@ -17,6 +18,31 @@ const defaultItem = {
 };
 
 const defaultPayment = { amount: '', payment_date: new Date().toISOString().split('T')[0], notes: '' };
+
+// Meniru logika status di hook saving model Invoice (backend): paid vs nominal setelah diskon
+const round2 = (n) => Math.round((parseFloat(n) || 0) * 100) / 100;
+
+const computeItemStatus = (item = {}) => {
+  const amount = parseFloat(item.amount) || 0;
+  let discount = 0;
+  if (item.discount_type === 'percentage') {
+    discount = amount * ((parseFloat(item.discount_value) || 0) / 100);
+  } else if (item.discount_type === 'fixed') {
+    discount = Math.min(parseFloat(item.discount_value) || 0, amount);
+  }
+  const finalAmount = round2(amount - discount);
+  const paid = round2((item.payments || []).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0));
+
+  if (paid <= 0) return 'Belum Lunas';
+  if (paid >= finalAmount) return 'Lunas';
+  return 'Sebagian';
+};
+
+const statusBadgeCls = {
+  'Lunas': 'badge-paid',
+  'Sebagian': 'badge-partial',
+  'Belum Lunas': 'badge-unpaid',
+};
 
 export default function InvoiceForm() {
   const navigate   = useNavigate();
@@ -104,11 +130,12 @@ export default function InvoiceForm() {
 
   // Quick add: isi baris yang sedang difokuskan; fallback baris kosong tunggal; terakhir tambah baris baru
   const handleQuickAdd = (cat) => {
+    const defaultAmount = Math.round(parseFloat(cat.default_amount)) || 0;
     const idx = activeRowIndex !== null && fields[activeRowIndex] ? activeRowIndex : null;
 
     if (idx !== null) {
       setValue(`items.${idx}.description`, cat.name, { shouldValidate: true });
-      setValue(`items.${idx}.amount`, cat.default_amount);
+      setValue(`items.${idx}.amount`, defaultAmount);
       return;
     }
 
@@ -119,14 +146,14 @@ export default function InvoiceForm() {
 
     if (onlyOneEmptyRow) {
       setValue('items.0.description', cat.name, { shouldValidate: true });
-      setValue('items.0.amount', cat.default_amount);
+      setValue('items.0.amount', defaultAmount);
       return;
     }
 
     append({
       ...defaultItem,
       description: cat.name,
-      amount: cat.default_amount,
+      amount: defaultAmount,
       payments: [],
     });
   };
@@ -195,6 +222,7 @@ export default function InvoiceForm() {
       ...data,
       items: data.items.map((item) => ({
         ...item,
+        status:         computeItemStatus(item),
         amount:         parseFloat(item.amount) || 0,
         discount_type:  item.discount_type || null,
         discount_value: parseFloat(item.discount_value) || null,
@@ -350,6 +378,7 @@ export default function InvoiceForm() {
                   const finalAmount    = itemAmount - discountAmount;
                   const itemPayments   = watchedItems[index]?.payments || [];
                   const paidAmount     = itemPayments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+                  const itemStatus     = computeItemStatus(watchedItems[index]);
                   const itemExpanded   = expandedItems[index];
 
                   return (
@@ -365,21 +394,18 @@ export default function InvoiceForm() {
                           />
                         </div>
                         <div className="item-amount">
-                          <input
-                            type="number"
+                          <CurrencyInput
                             className="form-input text-right"
                             placeholder="0"
-                            min="0"
+                            value={watchedItems[index]?.amount}
+                            onValueChange={(v) => setValue(`items.${index}.amount`, v, { shouldValidate: true })}
                             onFocus={() => setActiveRowIndex(index)}
-                            {...register(`items.${index}.amount`, { min: 0 })}
                           />
                         </div>
                         <div className="item-status">
-                          <select className="form-input" {...register(`items.${index}.status`)}>
-                            <option>Belum Lunas</option>
-                            <option>Sebagian</option>
-                            <option>Lunas</option>
-                          </select>
+                          <span className={`badge ${statusBadgeCls[itemStatus] ?? 'badge-unpaid'}`}>
+                            {itemStatus}
+                          </span>
                         </div>
                         <button
                           type="button"
@@ -415,14 +441,23 @@ export default function InvoiceForm() {
                                 <option value="fixed">Nominal (Rp)</option>
                               </select>
                               {discountType && (
-                                <input
-                                  type="number"
-                                  className="form-input form-input-sm"
-                                  placeholder={discountType === 'percentage' ? '0-100' : '0'}
-                                  min="0"
-                                  max={discountType === 'percentage' ? 100 : undefined}
-                                  {...register(`items.${index}.discount_value`, { min: 0 })}
-                                />
+                                discountType === 'fixed' ? (
+                                  <CurrencyInput
+                                    className="form-input form-input-sm"
+                                    placeholder="0"
+                                    value={watchedItems[index]?.discount_value}
+                                    onValueChange={(v) => setValue(`items.${index}.discount_value`, v, { shouldValidate: true })}
+                                  />
+                                ) : (
+                                  <input
+                                    type="number"
+                                    className="form-input form-input-sm"
+                                    placeholder="0-100"
+                                    min="0"
+                                    max="100"
+                                    {...register(`items.${index}.discount_value`, { min: 0, max: 100 })}
+                                  />
+                                )
                               )}
                               {discountAmount > 0 && (
                                 <span className="discount-amount-display">
@@ -452,12 +487,11 @@ export default function InvoiceForm() {
                                       className="form-input form-input-sm"
                                       {...register(`items.${index}.payments.${pi}.payment_date`)}
                                     />
-                                    <input
-                                      type="number"
+                                    <CurrencyInput
                                       className="form-input form-input-sm"
                                       placeholder="Jumlah"
-                                      min="0"
-                                      {...register(`items.${index}.payments.${pi}.amount`, { min: 0 })}
+                                      value={itemPayments[pi]?.amount}
+                                      onValueChange={(v) => setValue(`items.${index}.payments.${pi}.amount`, v, { shouldValidate: true })}
                                     />
                                     <input
                                       className="form-input form-input-sm"
