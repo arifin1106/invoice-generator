@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { invoiceApi, settingApi } from '../services/api';
 import { formatRupiah, formatDate } from '../utils/format';
 import { sharePdfViaWhatsApp } from '../utils/share';
-import { ArrowLeft, FileDown, Pencil, Printer, Loader2, Share2, Copy, MessageCircle } from 'lucide-react';
+import { ArrowLeft, FileDown, Pencil, Printer, Loader2, Share2, Copy, MessageCircle, Mail } from 'lucide-react';
 import ScaleToFit from '../components/ScaleToFit';
 
 export default function InvoicePreview() {
@@ -164,21 +164,37 @@ export default function InvoicePreview() {
       {/* Share Bar */}
       <div className="share-bar no-print">
         <span className="share-label"><Share2 size={14} /> Bagikan:</span>
-        <button className="btn btn-ghost btn-sm" onClick={handleWhatsApp} disabled={sharing}>
-          {sharing ? <Loader2 size={14} className="spin-icon" /> : <MessageCircle size={14} />}
-          {sharing ? 'Menyiapkan...' : 'Kirim PDF via WhatsApp'}
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={handleEmail}>
-          Email
+        <button className="btn btn-ghost btn-sm share-email-btn" onClick={handleEmail}>
+          <Mail size={14} /> Email
         </button>
         <button className="btn btn-ghost btn-sm" onClick={handleCopyLink}>
-          <Copy size={14} /> {copied ? 'Tersalin!' : 'Salin Link PDF'}
+          <Copy size={14} /> {copied ? 'Tersalin!' : 'Salin Link'}
+        </button>
+      </div>
+
+      {/* Sticky Bottom Bar (mobile only) */}
+      <div className="preview-bottombar no-print">
+        <button className="btn btn-ghost" onClick={handleWhatsApp} disabled={sharing}>
+          {sharing ? <Loader2 size={16} className="spin-icon" /> : <MessageCircle size={16} />}
+          WhatsApp
+        </button>
+        <button className="btn btn-ghost" onClick={handleEmail}>
+          <Mail size={16} /> Email
+        </button>
+        <button
+          className="btn btn-primary preview-bottombar-primary"
+          onClick={handleDownload}
+          disabled={downloading}
+        >
+          {downloading ? <Loader2 size={16} className="spin-icon" /> : <FileDown size={16} />}
+          {downloading ? 'Mengunduh...' : 'Download PDF'}
         </button>
       </div>
 
       {/* A4 Sheet */}
-      <ScaleToFit>
-        <div className="a4-sheet" ref={printRef}>
+      <div className="preview-a4">
+        <ScaleToFit>
+          <div className="a4-sheet" ref={printRef}>
         {/* Header */}
         <div className="inv-header">
           <div className="inv-logo-block">
@@ -392,8 +408,177 @@ export default function InvoicePreview() {
             <div className="sig-title">{setting?.signer_title ?? 'Finance Manager'}</div>
           </div>
         </div>
+        </div>
+        </ScaleToFit>
       </div>
-      </ScaleToFit>
+
+      {/* Mobile reflow document */}
+      <div className="preview-mdoc no-print">
+        <div className="mdoc-card">
+          <div className="mdoc-dochead">
+            <div>
+              <span className="mdoc-doctitle">INVOICE</span>
+              <span className="mdoc-docno">{invoice.invoice_number}</span>
+            </div>
+            <span className={`badge ${invoice.status === 'paid' ? 'badge-paid' : invoice.status === 'partial' ? 'badge-partial' : 'badge-unpaid'}`}>
+              {statusMap[invoice.status]}
+            </span>
+          </div>
+          <div className="mdoc-meta">
+            <div className="mdoc-meta-row">
+              <span className="mdoc-meta-label">Nama Siswa</span>
+              <span className="mdoc-meta-value">{invoice.student_name}</span>
+            </div>
+            <div className="mdoc-meta-row">
+              <span className="mdoc-meta-label">Level / Kelas</span>
+              <span className="mdoc-meta-value">{invoice.student_level}</span>
+            </div>
+            <div className="mdoc-meta-row">
+              <span className="mdoc-meta-label">Tanggal</span>
+              <span className="mdoc-meta-value">{formatDate(invoice.date)}</span>
+            </div>
+            <div className="mdoc-meta-row">
+              <span className="mdoc-meta-label">Jatuh Tempo</span>
+              <span className="mdoc-meta-value">{formatDate(invoice.due_date)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mdoc-card">
+          <h2 className="mdoc-section-title">Rincian Tagihan</h2>
+          <div className="mdoc-items">
+            {invoice.items?.map((item) => {
+              const amount = parseFloat(item.amount) || 0;
+              let disc = 0;
+              if (item.discount_type === 'percentage') {
+                disc = amount * ((parseFloat(item.discount_value) || 0) / 100);
+              } else if (item.discount_type === 'fixed') {
+                disc = Math.min(parseFloat(item.discount_value) || 0, amount);
+              }
+              const paid = parseFloat(item.paid_amount) || item.payments?.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0) || 0;
+              const itemStatus = item.status || (paid <= 0 ? 'Belum Lunas' : (paid >= amount - disc ? 'Lunas' : 'Sebagian'));
+
+              return (
+                <div key={item.id} className="mdoc-item">
+                  <div className="mdoc-item-top">
+                    <span className="mdoc-item-desc">{item.description}</span>
+                    <span className="mdoc-item-amount">{formatRupiah(item.amount)}</span>
+                  </div>
+                  {disc > 0 && (
+                    <div className="mdoc-item-sub text-red">
+                      <span>Diskon {item.discount_type === 'percentage' ? `${item.discount_value}%` : formatRupiah(item.discount_value)}</span>
+                      <span>-{formatRupiah(disc)}</span>
+                    </div>
+                  )}
+                  <div className="mdoc-item-sub">
+                    <span>Dibayar</span>
+                    <span className={paid > 0 ? 'text-green' : ''}>{paid > 0 ? formatRupiah(paid) : '-'}</span>
+                  </div>
+                  <div className="mdoc-item-foot">
+                    <span className={`badge ${itemStatus === 'Lunas' ? 'badge-paid' : itemStatus === 'Sebagian' ? 'badge-partial' : 'badge-unpaid'}`}>
+                      {itemStatus}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mdoc-totals">
+            {hasDiscount && (
+              <>
+                <div className="mdoc-total-row">
+                  <span>Subtotal</span>
+                  <span>{formatRupiah(totalBeforeDiscount)}</span>
+                </div>
+                <div className="mdoc-total-row text-red">
+                  <span>Total Diskon</span>
+                  <span>-{formatRupiah(totalDiscount)}</span>
+                </div>
+              </>
+            )}
+            <div className="mdoc-total-row mdoc-total-row--grand">
+              <span>Total</span>
+              <span>{formatRupiah(invoice.total_amount)}</span>
+            </div>
+            <div className="mdoc-total-row text-green">
+              <span>Bayaran Diterima</span>
+              <span>{formatRupiah(totalPaid)}</span>
+            </div>
+            <div className={`mdoc-total-row mdoc-total-remaining ${invoice.remaining_balance > 0 ? 'mdoc-total-remaining--due' : 'mdoc-total-remaining--clear'}`}>
+              <span>Sisa Tagihan</span>
+              <span>{formatRupiah(invoice.remaining_balance)}</span>
+            </div>
+          </div>
+        </div>
+
+        {hasPayments && (
+          <div className="mdoc-card">
+            <h2 className="mdoc-section-title">Riwayat Pembayaran</h2>
+            <div className="mdoc-paylist">
+              {invoice.items?.flatMap((item) =>
+                (item.payments || []).map((payment) => (
+                  <div key={payment.id} className="mdoc-payrow">
+                    <div className="mdoc-payrow-main">
+                      <span className="mdoc-item-desc">{item.description}</span>
+                      <span className="mdoc-item-amount text-green">{formatRupiah(payment.amount)}</span>
+                    </div>
+                    <div className="mdoc-item-sub">
+                      <span>{formatDate(payment.payment_date)}</span>
+                      <span>{payment.notes || '-'}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {invoice.notes && (
+          <div className="mdoc-card">
+            <h2 className="mdoc-section-title">Catatan</h2>
+            <p className="mdoc-notes">{invoice.notes}</p>
+          </div>
+        )}
+
+        <div className="mdoc-card">
+          {(setting?.bank_name || setting?.bank_account_number) && (
+            <>
+              <h2 className="mdoc-section-title">Detail Pembayaran</h2>
+              <div className="mdoc-meta mdoc-bank">
+                {setting?.bank_name && (
+                  <div className="mdoc-meta-row">
+                    <span className="mdoc-meta-label">Bank</span>
+                    <span className="mdoc-meta-value">{setting.bank_name}</span>
+                  </div>
+                )}
+                {setting?.bank_account_number && (
+                  <div className="mdoc-meta-row">
+                    <span className="mdoc-meta-label">No. Rekening</span>
+                    <span className="mdoc-meta-value"><strong>{setting.bank_account_number}</strong></span>
+                  </div>
+                )}
+                {setting?.bank_account_name && (
+                  <div className="mdoc-meta-row">
+                    <span className="mdoc-meta-label">Atas Nama</span>
+                    <span className="mdoc-meta-value">{setting.bank_account_name}</span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          <div className="mdoc-sig">
+            <div className="mdoc-date">Jakarta, {formatDate(invoice.date)}</div>
+            {sigSrc ? (
+              <img src={sigSrc} alt="Tanda Tangan" className="sig-img" />
+            ) : (
+              <div className="mdoc-sig-space" />
+            )}
+            <div className="mdoc-sig-line">{setting?.signer_name ?? 'RR Ratih Retno Sari, S.P'}</div>
+            <div className="mdoc-sig-role">{setting?.signer_title ?? 'Finance Manager'}</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

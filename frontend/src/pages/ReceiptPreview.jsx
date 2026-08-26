@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { receiptApi, settingApi } from '../services/api';
-import { ArrowLeft, FileDown, Loader2, Share2, Copy, MessageCircle } from 'lucide-react';
+import { ArrowLeft, FileDown, Loader2, Share2, Copy, MessageCircle, Mail } from 'lucide-react';
 import { formatRupiah, formatDate } from '../utils/format';
 import { sharePdfViaWhatsApp } from '../utils/share';
 import ScaleToFit from '../components/ScaleToFit';
@@ -65,6 +65,17 @@ export default function ReceiptPreview() {
     }
   };
 
+  const handleEmail = async () => {
+    try {
+      const url = await getShareUrl();
+      const subject = `Kwitansi ${receipt.receipt_number}`;
+      const body = `Telah terima dari: ${receipt.received_from}\nJumlah: ${formatRupiah(receipt.amount)}\n\nLihat / unduh kwitansi:\n${url}\n\nTerima kasih.`;
+      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    } catch {
+      alert('Gagal membuat link berbagi. Coba lagi.');
+    }
+  };
+
   const handleCopyLink = async () => {
     try {
       const url = await getShareUrl();
@@ -110,16 +121,36 @@ export default function ReceiptPreview() {
       {/* Share Bar */}
       <div className="share-bar no-print">
         <span className="share-label"><Share2 size={14} /> Bagikan:</span>
-        <button className="btn btn-ghost btn-sm" onClick={handleWhatsApp} disabled={sharing}>
+        <button className="btn btn-ghost btn-sm share-wa-btn" onClick={handleWhatsApp} disabled={sharing}>
           {sharing ? <Loader2 size={14} className="spin-icon" /> : <MessageCircle size={14} />}
           {sharing ? 'Menyiapkan...' : 'Kirim PDF via WhatsApp'}
         </button>
         <button className="btn btn-ghost btn-sm" onClick={handleCopyLink}>
-          <Copy size={14} /> {copied ? 'Tersalin!' : 'Salin Link PDF'}
+          <Copy size={14} /> {copied ? 'Tersalin!' : 'Salin Link'}
+        </button>
+      </div>
+
+      {/* Sticky Bottom Bar (mobile only) */}
+      <div className="preview-bottombar no-print">
+        <button className="btn btn-ghost" onClick={handleWhatsApp} disabled={sharing}>
+          {sharing ? <Loader2 size={16} className="spin-icon" /> : <MessageCircle size={16} />}
+          WhatsApp
+        </button>
+        <button className="btn btn-ghost" onClick={handleEmail}>
+          <Mail size={16} /> Email
+        </button>
+        <button
+          className="btn btn-primary preview-bottombar-primary"
+          onClick={handleDownload}
+          disabled={downloading}
+        >
+          {downloading ? <Loader2 size={16} className="spin-icon" /> : <FileDown size={16} />}
+          {downloading ? 'Mengunduh...' : 'Download PDF'}
         </button>
       </div>
 
       {/* A4 landscape sheet mockup */}
+      <div className="preview-a4">
       <ScaleToFit baseWidth={800}>
         <div className="a4-sheet" style={{ maxWidth: '800px', margin: '20px auto', padding: '30px', position: 'relative' }}>
         <div style={{ border: '2px solid #000', padding: '30px', borderRadius: '8px' }}>
@@ -193,6 +224,46 @@ export default function ReceiptPreview() {
         </div>
       </div>
       </ScaleToFit>
+      </div>
+
+      {/* Mobile reflow document */}
+      <div className="preview-mdoc no-print">
+        <div className="mdoc-card">
+          <div className="mdoc-dochead mdoc-dochead--center">
+            <span className="mdoc-doctitle">KWITANSI</span>
+            <span className="mdoc-docno">No. {receipt.receipt_number}</span>
+          </div>
+          <div className="mdoc-meta">
+            <div className="mdoc-meta-row">
+              <span className="mdoc-meta-label">Telah terima dari</span>
+              <span className="mdoc-meta-value">{receipt.received_from}</span>
+            </div>
+            <div className="mdoc-meta-row">
+              <span className="mdoc-meta-label">Tanggal</span>
+              <span className="mdoc-meta-value">{formatDate(receipt.date)}</span>
+            </div>
+            <div className="mdoc-meta-row">
+              <span className="mdoc-meta-label">Untuk pembayaran</span>
+              <span className="mdoc-meta-value">
+                {receipt.payment_category && (
+                  <span className="badge" style={{ marginRight: '6px' }}>[{receipt.payment_category}]</span>
+                )}
+                {receipt.description}
+              </span>
+            </div>
+          </div>
+          <div className="mdoc-amount-box">{formatRupiah(receipt.amount)}</div>
+          <div className="mdoc-terbilang"># {receipt.amount_in_words} #</div>
+        </div>
+
+        <div className="mdoc-card">
+          <div className="mdoc-sig">
+            <div className="mdoc-date">{city}, {formatDate(receipt.date)}</div>
+            <div className="mdoc-sig-space" />
+            <div className="mdoc-sig-line">Penerima</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
