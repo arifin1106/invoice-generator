@@ -26,10 +26,10 @@ class ReceiptController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = strtolower($request->search);
             $query->where(function($q) use ($search) {
-                $q->where('receipt_number', 'like', "%{$search}%")
-                  ->orWhere('received_from', 'like', "%{$search}%");
+                $q->whereRaw('LOWER(receipt_number) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(received_from) LIKE ?', ["%{$search}%"]);
             });
         }
 

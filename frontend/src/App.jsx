@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
@@ -15,13 +17,21 @@ import './index.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, staleTime: 30_000 },
+    queries: { 
+      retry: 1, 
+      staleTime: 60_000, 
+      gcTime: 1000 * 60 * 60 * 24 
+    },
   },
+});
+
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
 });
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
       <AuthProvider>
         <BrowserRouter>
           <Routes>
@@ -44,6 +54,6 @@ export default function App() {
           </Routes>
         </BrowserRouter>
       </AuthProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

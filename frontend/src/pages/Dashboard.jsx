@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { invoiceApi } from '../services/api';
 import { formatRupiah, formatDate, statusConfig } from '../utils/format';
 import {
@@ -16,10 +16,11 @@ export default function Dashboard() {
   const [page, setPage]         = useState(1);
   const [deleteId, setDeleteId] = useState(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: ['invoices', { search, status, page }],
     queryFn: () =>
       invoiceApi.list({ search, status, page, per_page: 10 }).then((r) => r.data),
+    placeholderData: keepPreviousData,
   });
 
   const deleteMutation = useMutation({
@@ -89,7 +90,7 @@ export default function Dashboard() {
       </div>
 
       {/* Table */}
-      <div className="table-card">
+      <div className="table-card" style={{ opacity: isFetching ? 0.6 : 1, transition: 'opacity 0.2s' }}>
         {isLoading ? (
           <div className="table-empty"><div className="spinner" /><p>Memuat data...</p></div>
         ) : invoices.length === 0 ? (

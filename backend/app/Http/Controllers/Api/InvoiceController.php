@@ -21,10 +21,10 @@ class InvoiceController extends Controller
         $query = Invoice::with('items');
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = strtolower($request->search);
             $query->where(function ($q) use ($search) {
-                $q->where('student_name', 'like', "%{$search}%")
-                  ->orWhere('invoice_number', 'like', "%{$search}%");
+                $q->whereRaw('LOWER(student_name) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(invoice_number) LIKE ?', ["%{$search}%"]);
             });
         }
 
