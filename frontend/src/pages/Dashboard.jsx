@@ -1,37 +1,28 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { invoiceApi } from '../services/api';
-import { formatRupiah, formatDate, statusConfig } from '../utils/format';
+import { formatRupiah } from '../utils/format';
 import {
-  Search, Eye, Pencil, Trash2, FileDown,
   FileText, TrendingUp, AlertCircle, CheckCircle,
 } from 'lucide-react';
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend,
+} from 'recharts';
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function formatMonth(ym) {
+  if (!ym) return '';
+  const [y, m] = ym.split('-');
+  return `${MONTH_NAMES[parseInt(m, 10) - 1]} ${y.slice(2)}`;
+}
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const qc = useQueryClient();
-  const [search, setSearch]     = useState('');
-  const [status, setStatus]     = useState('');
-  const [page, setPage]         = useState(1);
-  const [deleteId, setDeleteId] = useState(null);
-
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['invoices', { search, status, page }],
-    queryFn: () =>
-      invoiceApi.list({ search, status, page, per_page: 10 }).then((r) => r.data),
-    placeholderData: keepPreviousData,
+  const { data, isLoading } = useQuery({
+    queryKey: ['invoices', { page: 1, per_page: 1 }],
+    queryFn: () => invoiceApi.list({ page: 1, per_page: 1 }).then((r) => r.data),
   });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => invoiceApi.remove(id),
-    onSuccess: () => {
-      qc.invalidateQueries(['invoices']);
-      setDeleteId(null);
-    },
-  });
-
-  const invoices = data?.data ?? [];
 
   const stats = useMemo(() => ({
     total:   data?.total ?? 0,
@@ -41,23 +32,53 @@ export default function Dashboard() {
     revenue: data?.stats?.revenue ?? 0,
   }), [data]);
 
+  const monthlyData = useMemo(() => {
+    const raw = data?.monthly_data ?? [];
+    return raw.map((d) => ({
+      ...d,
+      label: formatMonth(d.month),
+      total: Number(d.total),
+      received: Number(d.received),
+      count: Number(d.count),
+    }));
+  }, [data]);
+
+  const totalsByMonth = useMemo(() => {
+    const raw = data?.monthly_data ?? [];
+    return [...raw].reverse();
+  }, [data]);
+
+  if (isLoading) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Dashboard</h1>
+            <p className="page-subtitle">Ringkasan data invoice keseluruhan</p>
+          </div>
+        </div>
+        <div className="table-empty"><div className="spinner" /><p>Memuat data...</p></div>
+      </div>
+    );
+  }
+
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Kelola semua invoice tagihan siswa</p>
+          <p className="page-subtitle">Ringkasan data invoice keseluruhan</p>
         </div>
       </div>
 
       {/* Stats */}
       <div className="stats-grid">
         {[
-          { icon: FileText,     color: 'blue',   value: data?.total ?? 0,          label: 'Total Invoice' },
-          { icon: CheckCircle,  color: 'green',  value: stats.paid,                label: 'Lunas' },
-          { icon: AlertCircle,  color: 'orange', value: stats.partial,             label: 'Sebagian' },
-          { icon: AlertCircle,  color: 'red',    value: stats.unpaid,              label: 'Belum Lunas' },
-          { icon: TrendingUp,   color: 'purple', value: formatRupiah(stats.revenue), label: 'Total Diterima' },
+          { icon: FileText,    color: 'blue',   value: stats.total,                 label: 'Total Invoice' },
+          { icon: CheckCircle, color: 'green',  value: stats.paid,                  label: 'Lunas' },
+          { icon: AlertCircle, color: 'orange', value: stats.partial,               label: 'Sebagian' },
+          { icon: AlertCircle, color: 'red',    value: stats.unpaid,                label: 'Belum Lunas' },
+          { icon: TrendingUp,  color: 'purple', value: formatRupiah(stats.revenue), label: 'Total Diterima' },
         ].map(({ icon: Icon, color, value, label }) => (
           <div key={label} className="stat-card">
             <div className={`stat-icon stat-icon--${color}`}><Icon size={20} /></div>
@@ -69,103 +90,50 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="filters-bar">
-        <div className="search-box">
-          <Search size={16} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Cari nama siswa atau nomor invoice..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="search-input"
-          />
-        </div>
-        <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="filter-select">
-          <option value="">Semua Status</option>
-          <option value="paid">Lunas</option>
-          <option value="partial">Sebagian</option>
-          <option value="unpaid">Belum Lunas</option>
-        </select>
-      </div>
-
-      {/* Table */}
-      <div className="table-card" style={{ opacity: isFetching ? 0.6 : 1, transition: 'opacity 0.2s' }}>
-        {isLoading ? (
-          <div className="table-empty"><div className="spinner" /><p>Memuat data...</p></div>
-        ) : invoices.length === 0 ? (
-          <div className="table-empty">
-            <FileText size={48} className="empty-icon" />
-            <p>Belum ada invoice. <span className="link" onClick={() => navigate('/invoices/new')}>Buat sekarang</span></p>
+      {/* Chart */}
+      {monthlyData.length > 0 && (
+        <div className="card dashboard-chart-card">
+          <h3 className="card-title">Grafik 12 Bulan Terakhir</h3>
+          <div className="dashboard-chart-wrap">
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart data={monthlyData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="var(--text-muted)" />
+                <YAxis tick={{ fontSize: 12 }} stroke="var(--text-muted)" tickFormatter={(v) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(0)}jt` : v >= 1_000 ? `${(v / 1_000).toFixed(0)}rb` : v} />
+                <Tooltip formatter={(v) => formatRupiah(v)} />
+                <Legend />
+                <Line type="monotone" dataKey="total"   name="Total"   stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="received" name="Diterima" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>No. Invoice</th>
-                <th>Nama Siswa</th>
-                <th>Level</th>
-                <th>Tanggal</th>
-                <th>Jatuh Tempo</th>
-                <th className="text-right">Total</th>
-                <th className="text-right">Sisa</th>
-                <th className="text-center">Status</th>
-                <th className="text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((inv) => {
-                const sc = statusConfig[inv.status] ?? statusConfig.unpaid;
-                return (
-                  <tr key={inv.id}>
-                    <td className="font-mono" data-label="No. Invoice">{inv.invoice_number}</td>
-                    <td className="font-medium" data-label="Nama Siswa">{inv.student_name}</td>
-                    <td data-label="Level">{inv.student_level}</td>
-                    <td data-label="Tanggal">{formatDate(inv.date)}</td>
-                    <td data-label="Jatuh Tempo">{formatDate(inv.due_date)}</td>
-                    <td className="text-right" data-label="Total">{formatRupiah(inv.total_amount)}</td>
-                    <td className="text-right" data-label="Sisa">{formatRupiah(inv.remaining_balance)}</td>
-                    <td className="text-center" data-label="Status">
-                      <span className={`badge ${sc.className}`}>{sc.label}</span>
-                    </td>
-                    <td className="text-center" data-label="Aksi">
-                      <div className="action-btns">
-                        <button className="action-btn action-btn--view" title="Preview" onClick={() => navigate(`/invoices/${inv.id}/preview`)}><Eye size={15} /></button>
-                        <button className="action-btn action-btn--edit" title="Edit" onClick={() => navigate(`/invoices/${inv.id}/edit`)}><Pencil size={15} /></button>
-                        <button className="action-btn action-btn--download" title="Download PDF" onClick={() => invoiceApi.downloadPdf(inv.id, inv.invoice_number)}><FileDown size={15} /></button>
-                        <button className="action-btn action-btn--delete" title="Hapus" onClick={() => setDeleteId(inv.id)}><Trash2 size={15} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Pagination */}
-      {data?.last_page > 1 && (
-        <div className="pagination">
-          <button className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>← Sebelumnya</button>
-          <span className="page-info">Halaman {page} dari {data.last_page}</span>
-          <button className="btn btn-ghost" disabled={page >= data.last_page} onClick={() => setPage((p) => p + 1)}>Berikutnya →</button>
         </div>
       )}
 
-      {/* Delete Modal */}
-      {deleteId && (
-        <div className="modal-overlay" onClick={() => setDeleteId(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">Hapus Invoice?</h3>
-            <p className="modal-body">Tindakan ini tidak dapat dibatalkan. Invoice akan dihapus permanen.</p>
-            <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Batal</button>
-              <button className="btn btn-danger" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deleteId)}>
-                {deleteMutation.isPending ? 'Menghapus...' : 'Ya, Hapus'}
-              </button>
-            </div>
-          </div>
+      {/* Monthly Summary Table */}
+      {totalsByMonth.length > 0 && (
+        <div className="card">
+          <h3 className="card-title">Total per Bulan</h3>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Bulan</th>
+                <th className="text-center">Jumlah Invoice</th>
+                <th className="text-right">Total Tagihan</th>
+                <th className="text-right">Total Diterima</th>
+              </tr>
+            </thead>
+            <tbody>
+              {totalsByMonth.map((row) => (
+                <tr key={row.month}>
+                  <td>{formatMonth(row.month)}</td>
+                  <td className="text-center">{row.count}</td>
+                  <td className="text-right">{formatRupiah(row.total)}</td>
+                  <td className="text-right">{formatRupiah(row.received)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

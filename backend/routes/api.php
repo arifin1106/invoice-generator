@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\PaymentCategoryController;
+use App\Http\Controllers\Api\BankAccountController;
 use Illuminate\Support\Facades\Route;
 
 // Public Auth routes
@@ -35,6 +36,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Payment Categories (Biaya Default)
     Route::get('/payment-categories', [PaymentCategoryController::class, 'index']);
     Route::put('/payment-categories', [PaymentCategoryController::class, 'update']);
+
+    // Bank Accounts (Rekening Bank per Kategori)
+    Route::apiResource('bank-accounts', BankAccountController::class);
 
     // Invoice number generator
     Route::get('/invoices/generate-number', [InvoiceController::class, 'generateNumber']);

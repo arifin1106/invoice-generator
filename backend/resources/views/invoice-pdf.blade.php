@@ -414,29 +414,29 @@ body {
 <table style="width:100%; border-collapse:collapse;">
   <tr>
     <td style="width:54%; vertical-align:bottom;">
-      @if($setting && ($setting->bank_name || $setting->bank_account_number))
+      @if($bank)
       <div class="bank-box">
         <div class="bank-title">Detail Pembayaran</div>
         <table class="bank-t">
-          @if($setting->bank_name)
+          @if($bank->bank_name)
           <tr>
             <td class="bk">Nama Bank</td>
             <td class="bc">:</td>
-            <td>{{ $setting->bank_name }}</td>
+            <td>{{ $bank->bank_name }}</td>
           </tr>
           @endif
-          @if($setting->bank_account_number)
+          @if($bank->account_number)
           <tr>
             <td class="bk">Nomor Akun Bank</td>
             <td class="bc">:</td>
-            <td><strong>{{ $setting->bank_account_number }}</strong></td>
+            <td><strong>{{ $bank->account_number }}</strong></td>
           </tr>
           @endif
-          @if($setting->bank_account_name)
+          @if($bank->account_name)
           <tr>
             <td class="bk">Atas Nama</td>
             <td class="bc">:</td>
-            <td>{{ $setting->bank_account_name }}</td>
+            <td>{{ $bank->account_name }}</td>
           </tr>
           @endif
         </table>

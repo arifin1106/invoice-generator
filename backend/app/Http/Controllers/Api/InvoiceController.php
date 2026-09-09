@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
+use App\Models\BankAccount;
 use App\Models\Payment;
 use App\Models\Setting;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -18,7 +19,7 @@ class InvoiceController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Invoice::with('items');
+        $query = Invoice::with('items', 'bankAccount');
 
         if ($request->filled('search')) {
             $search = strtolower($request->search);
@@ -32,15 +33,34 @@ class InvoiceController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('student_level')) {
+            $levels = explode(',', $request->student_level);
+            $query->whereIn('student_level', $levels);
+        }
+
         $invoices = $query->orderBy('id', 'asc')->paginate($request->get('per_page', 15));
-        
+
+        $statsQuery = Invoice::query();
+        if ($request->filled('student_level')) {
+            $levels = explode(',', $request->student_level);
+            $statsQuery->whereIn('student_level', $levels);
+        }
+
         $response = $invoices->toArray();
         $response['stats'] = [
-            'paid'    => Invoice::where('status', 'paid')->count(),
-            'partial' => Invoice::where('status', 'partial')->count(),
-            'unpaid'  => Invoice::where('status', 'unpaid')->count(),
-            'revenue' => Invoice::sum('amount_received'),
+            'paid'    => (clone $statsQuery)->where('status', 'paid')->count(),
+            'partial' => (clone $statsQuery)->where('status', 'partial')->count(),
+            'unpaid'  => (clone $statsQuery)->where('status', 'unpaid')->count(),
+            'revenue' => (clone $statsQuery)->sum('amount_received'),
         ];
+
+        $monthlyQuery = Invoice::selectRaw("TO_CHAR(date, 'YYYY-MM') as month, SUM(total_amount) as total, SUM(amount_received) as received, COUNT(*) as count")
+            ->where('date', '>=', now()->subMonths(11)->startOfMonth());
+        if ($request->filled('student_level')) {
+            $levels = explode(',', $request->student_level);
+            $monthlyQuery->whereIn('student_level', $levels);
+        }
+        $response['monthly_data'] = $monthlyQuery->groupBy('month')->orderBy('month')->get();
 
         return response()->json($response);
     }
@@ -53,6 +73,7 @@ class InvoiceController extends Controller
             'due_date'            => 'required|date',
             'student_name'        => 'required|string|max:255',
             'student_level'       => 'required|string|max:50',
+            'bank_account_id'     => 'nullable|exists:bank_accounts,id',
             'notes'               => 'nullable|string',
             'items'               => 'required|array|min:1',
             'items.*.description' => 'required|string',
@@ -73,6 +94,8 @@ class InvoiceController extends Controller
                 'due_date'       => $validated['due_date'],
                 'student_name'   => $validated['student_name'],
                 'student_level'  => $validated['student_level'],
+                'bank_account_id' => $validated['bank_account_id']
+                    ?? $this->resolveBankId($validated['student_level']),
                 'total_amount'   => 0,
                 'amount_received' => 0,
                 'notes'          => $validated['notes'] ?? null,
@@ -111,7 +134,18 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice): JsonResponse
     {
-        return response()->json($invoice->load('items.payments'));
+        $invoice->load('items.payments', 'bankAccount');
+
+        if (!$invoice->bank_account_id) {
+            $bank = $invoice->resolveBankAccount();
+            if ($bank) {
+                $invoice->bank_account_id = $bank->id;
+                $invoice->setRelation('bankAccount', $bank);
+                $invoice->saveQuietly();
+            }
+        }
+
+        return response()->json($invoice);
     }
 
     public function update(Request $request, Invoice $invoice): JsonResponse
@@ -122,6 +156,7 @@ class InvoiceController extends Controller
             'due_date'            => 'required|date',
             'student_name'        => 'required|string|max:255',
             'student_level'       => 'required|string|max:50',
+            'bank_account_id'     => 'nullable|exists:bank_accounts,id',
             'notes'               => 'nullable|string',
             'items'               => 'required|array|min:1',
             'items.*.description' => 'required|string',
@@ -143,6 +178,8 @@ class InvoiceController extends Controller
                 'due_date'       => $validated['due_date'],
                 'student_name'   => $validated['student_name'],
                 'student_level'  => $validated['student_level'],
+                'bank_account_id' => $validated['bank_account_id']
+                    ?? $this->resolveBankId($validated['student_level']),
                 'total_amount'   => 0,
                 'amount_received' => 0,
                 'notes'          => $validated['notes'] ?? null,
@@ -169,7 +206,7 @@ class InvoiceController extends Controller
                 }
             }
 
-            $invoice->load('items.payments');
+            $invoice->load('items.payments', 'bankAccount');
             $invoice->save();
 
             DB::commit();
@@ -192,7 +229,9 @@ class InvoiceController extends Controller
             $invoice->load('items.payments');
             $setting = Setting::first();
 
-            $pdf = Pdf::loadView('invoice-pdf', compact('invoice', 'setting'))
+            $bank = $invoice->resolveBankAccount();
+
+            $pdf = Pdf::loadView('invoice-pdf', compact('invoice', 'setting', 'bank'))
                 ->setPaper('a4', 'portrait');
 
             $filename = 'Invoice-' . str_replace('/', '-', $invoice->invoice_number) . '.pdf';
@@ -233,12 +272,22 @@ class InvoiceController extends Controller
             '09' => 'IX',  '10' => 'X',   '11' => 'XI',  '12' => 'XII',
         ];
 
-        $count = Invoice::whereYear('created_at', $year)
-                        ->whereMonth('created_at', $month)
-                        ->count() + 1;
+        $setting = Setting::first();
+        $number  = $setting->next_invoice_number;
+        $setting->increment('next_invoice_number');
 
-        $number = sprintf('%02d/JACOS/INV/%s/%s', $count, $romanMonth[$month], $year);
+        $invoiceNumber = sprintf('%02d/JACOS/INV/%s/%s', $number, $romanMonth[$month], $year);
 
-        return response()->json(['invoice_number' => $number]);
+        return response()->json(['invoice_number' => $invoiceNumber]);
+    }
+
+    private function resolveBankId(string $studentLevel): ?int
+    {
+        $category = in_array($studentLevel, ['P1', 'P2', 'K1', 'K2'], true)
+            ? 'preschool'
+            : 'primary';
+
+        return BankAccount::where('category', $category)->value('id')
+            ?? BankAccount::where('category', 'umum')->value('id');
     }
 }

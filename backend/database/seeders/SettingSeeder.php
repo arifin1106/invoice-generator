@@ -22,6 +22,7 @@ class SettingSeeder extends Seeder
                 'signer_name'         => 'RR Ratih Retno Sari, S.P',
                 'signer_title'        => 'Finance Manager',
                 'payment_message'     => "Mohon konfirmasi pembayaran kepada kami setelah melakukan transfer.\nHubungi kami via WhatsApp untuk konfirmasi lebih lanjut.",
+                'next_invoice_number' => 1,
             ]
         );
     }

@@ -4,18 +4,27 @@ import {
   LayoutDashboard,
   Settings,
   PlusCircle,
-  GraduationCap,
   Menu,
   Receipt,
   X,
+  FileText,
+  ChevronDown,
 } from 'lucide-react';
 import Topbar from './Topbar';
 import ProfileModal from './ProfileModal';
 
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Invoice' },
-  { to: '/receipts',  icon: Receipt,         label: 'Kwitansi' },
-  { to: '/settings',  icon: Settings,        label: 'Pengaturan' },
+const navGroups = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  {
+    icon: FileText,
+    label: 'Invoice',
+    children: [
+      { to: '/invoices/preschool', label: 'Preschool & Kindergarten' },
+      { to: '/invoices/primary',   label: 'Primary' },
+    ],
+  },
+  { to: '/receipts',  icon: Receipt,  label: 'Kwitansi' },
+  { to: '/settings',  icon: Settings, label: 'Pengaturan' },
 ];
 
 export default function Layout() {
@@ -23,9 +32,21 @@ export default function Layout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState(() => {
+    if (location.pathname.startsWith('/invoices/preschool') || location.pathname.startsWith('/invoices/primary')) {
+      return { Invoice: true };
+    }
+    return {};
+  });
 
   useEffect(() => {
     setDrawerOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/invoices/preschool') || location.pathname.startsWith('/invoices/primary')) {
+      setOpenGroups((prev) => ({ ...prev, Invoice: true }));
+    }
   }, [location.pathname]);
 
   useEffect(() => {
@@ -34,6 +55,10 @@ export default function Layout() {
       document.body.style.overflow = '';
     };
   }, [drawerOpen]);
+
+  const toggleGroup = (label) => {
+    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
 
   return (
     <div className={`app-shell ${isCollapsed ? 'app-shell--collapsed' : ''}`}>
@@ -70,18 +95,51 @@ export default function Layout() {
 
         {/* Nav */}
         <nav className="sidebar-nav">
-          {navItems.map(({ to, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                `nav-item ${isActive ? 'nav-item--active' : ''}`
-              }
-            >
-              <Icon size={18} />
-              <span>{label}</span>
-            </NavLink>
-          ))}
+          {navGroups.map((item) => {
+            if (item.children) {
+              const isOpen = !!openGroups[item.label];
+              const isChildActive = item.children.some((c) => location.pathname.startsWith(c.to));
+              return (
+                <div key={item.label} className="nav-group">
+                  <button
+                    className={`nav-item nav-item--group ${isChildActive ? 'nav-item--active' : ''}`}
+                    onClick={() => toggleGroup(item.label)}
+                  >
+                    <item.icon size={18} />
+                    <span>{item.label}</span>
+                    <ChevronDown size={14} className={`nav-chevron ${isOpen ? 'nav-chevron--open' : ''}`} />
+                  </button>
+                  {isOpen && (
+                    <div className="nav-children">
+                      {item.children.map((child) => (
+                        <NavLink
+                          key={child.to}
+                          to={child.to}
+                          className={({ isActive }) =>
+                            `nav-item nav-item--child ${isActive ? 'nav-item--active' : ''}`
+                          }
+                        >
+                          <span>{child.label}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `nav-item ${isActive ? 'nav-item--active' : ''}`
+                }
+              >
+                <item.icon size={18} />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
         </nav>
 
         {/* Quick Action */}

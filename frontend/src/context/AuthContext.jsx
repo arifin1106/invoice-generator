@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext(null);
@@ -34,13 +34,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     const response = await axios.post(`${apiBase}/login`, { email, password });
     setToken(response.data.token);
     setUser(response.data.user);
-  };
+  }, [apiBase]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await axios.post(`${apiBase}/logout`, {}, {
         headers: { Authorization: `Bearer ${token}` }
@@ -51,10 +51,12 @@ export const AuthProvider = ({ children }) => {
       setToken(null);
       setUser(null);
     }
-  };
+  }, [apiBase, token]);
+
+  const ctxValue = useMemo(() => ({ user, token, isLoading, login, logout }), [user, token, isLoading, login, logout]);
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+    <AuthContext.Provider value={ctxValue}>
       {children}
     </AuthContext.Provider>
   );

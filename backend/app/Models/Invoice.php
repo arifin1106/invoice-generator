@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Invoice extends Model
 {
@@ -13,6 +14,7 @@ class Invoice extends Model
         'due_date',
         'student_name',
         'student_level',
+        'bank_account_id',
         'total_amount',
         'amount_received',
         'remaining_balance',
@@ -31,6 +33,25 @@ class Invoice extends Model
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class)->orderBy('sort_order');
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(BankAccount::class);
+    }
+
+    public function resolveBankAccount(): ?BankAccount
+    {
+        if ($this->bank_account_id && $this->bankAccount) {
+            return $this->bankAccount;
+        }
+
+        $category = in_array($this->student_level, ['P1', 'P2', 'K1', 'K2'], true)
+            ? 'preschool'
+            : 'primary';
+
+        return BankAccount::where('category', $category)->first()
+            ?? BankAccount::where('category', 'umum')->first();
     }
 
     protected static function booted(): void

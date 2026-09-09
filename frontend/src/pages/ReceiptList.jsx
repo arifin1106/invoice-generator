@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { receiptApi } from '../services/api';
 import { formatRupiah, formatDate } from '../utils/format';
+import useDebounce from '../hooks/useDebounce';
 import {
   Search, Eye, Pencil, Trash2, FileDown, PlusCircle, 
   Receipt, FileText, CheckCircle, Shirt, Utensils, Bus
@@ -16,10 +17,12 @@ export default function ReceiptList() {
   const [page, setPage]         = useState(1);
   const [deleteId, setDeleteId] = useState(null);
 
+  const debouncedSearch = useDebounce(search);
+
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['receipts', { search, category, page }],
+    queryKey: ['receipts', { search: debouncedSearch, category, page }],
     queryFn: () =>
-      receiptApi.list({ search, category, page, per_page: 10 }).then((r) => r.data),
+      receiptApi.list({ search: debouncedSearch, category, page, per_page: 10 }).then((r) => r.data),
     placeholderData: keepPreviousData,
   });
 

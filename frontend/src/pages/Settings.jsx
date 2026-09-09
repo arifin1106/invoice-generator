@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { settingApi, paymentCategoryApi } from '../services/api';
-import { LEVELS } from '../utils/constants';
+import { settingApi, paymentCategoryApi, bankAccountApi } from '../services/api';
+import { LEVELS, BANK_CATEGORIES } from '../utils/constants';
 import CurrencyInput from '../components/CurrencyInput';
-import { Save, Building2, CreditCard, PenLine, Coins } from 'lucide-react';
+import { Save, Building2, CreditCard, PenLine, Coins, Plus, Pencil, Trash2, X } from 'lucide-react';
 
 export default function Settings() {
   const qc = useQueryClient();
@@ -21,13 +21,21 @@ export default function Settings() {
 
   const [form, setForm] = useState({
     institution_name: '', institution_address: '', institution_phone: '',
-    institution_email: '', bank_name: '', bank_account_number: '',
-    bank_account_name: '', signer_name: '', signer_title: '',
+    institution_email: '', signer_name: '', signer_title: '',
     payment_message: '',
   });
   const [logoFile, setLogoFile] = useState(null);
   const [sigFile, setSigFile] = useState(null);
   const [catAmounts, setCatAmounts] = useState({});
+
+  const { data: banks = [], isLoading: loadingBanks } = useQuery({
+    queryKey: ['bank-accounts'],
+    queryFn: () => bankAccountApi.list().then((r) => r.data),
+  });
+
+  const [bankModal, setBankModal] = useState(null);
+  const [bankForm, setBankForm] = useState({ bank_name: '', account_number: '', account_name: '', category: 'umum' });
+  const [bankDeleteId, setBankDeleteId] = useState(null);
 
   const groupedCategories = useMemo(() => {
     if (!categories) return [];
@@ -46,9 +54,6 @@ export default function Settings() {
         institution_address: setting.institution_address ?? '',
         institution_phone:   setting.institution_phone   ?? '',
         institution_email:   setting.institution_email   ?? '',
-        bank_name:           setting.bank_name           ?? '',
-        bank_account_number: setting.bank_account_number ?? '',
-        bank_account_name:   setting.bank_account_name   ?? '',
         signer_name:         setting.signer_name         ?? '',
         signer_title:        setting.signer_title        ?? '',
         payment_message:     setting.payment_message     ?? '',
@@ -90,12 +95,43 @@ export default function Settings() {
     onError: () => showToast('Gagal menyimpan biaya default.', 'error'),
   });
 
+  const bankMutation = useMutation({
+    mutationFn: (data) =>
+      bankModal?.id
+        ? bankAccountApi.update(bankModal.id, data)
+        : bankAccountApi.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries(['bank-accounts']);
+      setBankModal(null);
+      setBankForm({ bank_name: '', account_number: '', account_name: '', category: 'umum' });
+      showToast('Rekening bank berhasil disimpan!', 'success');
+    },
+    onError: () => showToast('Gagal menyimpan rekening bank.', 'error'),
+  });
+
+  const bankDeleteMutation = useMutation({
+    mutationFn: (id) => bankAccountApi.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries(['bank-accounts']);
+      setBankDeleteId(null);
+      showToast('Rekening bank berhasil dihapus!', 'success');
+    },
+    onError: () => showToast('Gagal menghapus rekening bank.', 'error'),
+  });
+
   const showToast = (msg, type) => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 5000);
   };
 
   const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+
+  const handleOpenBankModal = (bank = null) => {
+    setBankModal(bank ?? false);
+    setBankForm(bank
+      ? { bank_name: bank.bank_name, account_number: bank.account_number, account_name: bank.account_name, category: bank.category }
+      : { bank_name: '', account_number: '', account_name: '', category: 'umum' });
+  };
 
   const handleCategoryAmountChange = (id, value) => {
     setCatAmounts((prev) => ({ ...prev, [id]: value }));
@@ -166,23 +202,58 @@ export default function Settings() {
         </div>
 
         <div>
-          {/* Bank */}
+          {/* Bank Accounts per Kategori */}
           <div className="form-section mb-4">
             <div className="section-header">
               <CreditCard size={18} className="section-icon" />
-              <h2 className="section-title">Detail Pembayaran</h2>
+              <h2 className="section-title">Rekening Bank per Kategori</h2>
             </div>
-            <div className="form-group">
-              <label className="form-label">Nama Bank</label>
-              <input name="bank_name" className="form-input" value={form.bank_name} onChange={handleChange} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Nomor Rekening</label>
-              <input name="bank_account_number" className="form-input" value={form.bank_account_number} onChange={handleChange} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Atas Nama</label>
-              <input name="bank_account_name" className="form-input" value={form.bank_account_name} onChange={handleChange} />
+            <p className="section-desc">Atur rekening bank untuk setiap kategori. Saat membuat invoice, rekening akan otomatis dipilih sesuai kategori level siswa, dan dapat diubah manual di form invoice.</p>
+
+            {loadingBanks ? (
+              <div className="spinner" />
+            ) : banks.length === 0 ? (
+              <div className="table-empty">
+                <CreditCard size={40} className="empty-icon" />
+                <p>Belum ada rekening bank.</p>
+              </div>
+            ) : (
+              <div className="table-card table-card--flush">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Kategori</th>
+                      <th>Nama Bank</th>
+                      <th>No. Rekening</th>
+                      <th>Atas Nama</th>
+                      <th className="text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {banks.map((bank) => (
+                      <tr key={bank.id}>
+                        <td data-label="Kategori">{BANK_CATEGORIES.find((c) => c.value === bank.category)?.label ?? bank.category}</td>
+                        <td data-label="Bank">{bank.bank_name}</td>
+                        <td data-label="No. Rekening"><strong>{bank.account_number}</strong></td>
+                        <td data-label="Atas Nama">{bank.account_name}</td>
+                        <td className="text-center" data-label="Aksi">
+                          <div className="action-btns">
+                            <button className="action-btn action-btn--edit" title="Edit" onClick={() => handleOpenBankModal(bank)}><Pencil size={15} /></button>
+                            <button className="action-btn action-btn--delete" title="Hapus" onClick={() => setBankDeleteId(bank.id)}><Trash2 size={15} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="mt-3">
+              <button className="btn btn-secondary btn-sm" onClick={() => handleOpenBankModal()}>
+                <Plus size={14} />
+                Tambah Rekening
+              </button>
             </div>
           </div>
 
@@ -273,6 +344,76 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      {bankModal !== null && (
+        <div className="modal-overlay show" onClick={() => setBankModal(null)}>
+          <div className="modal bank-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">
+                {bankModal?.id ? 'Edit Rekening Bank' : 'Tambah Rekening Bank'}
+              </h3>
+              <button className="btn-icon" onClick={() => setBankModal(null)}><X size={18} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Kategori</label>
+                <select
+                  className="form-input"
+                  value={bankForm.category}
+                  onChange={(e) => setBankForm((f) => ({ ...f, category: e.target.value }))}
+                >
+                  {BANK_CATEGORIES.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Nama Bank</label>
+                <input className="form-input" value={bankForm.bank_name} onChange={(e) => setBankForm((f) => ({ ...f, bank_name: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Nomor Rekening</label>
+                <input className="form-input" value={bankForm.account_number} onChange={(e) => setBankForm((f) => ({ ...f, account_number: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Atas Nama</label>
+                <input className="form-input" value={bankForm.account_name} onChange={(e) => setBankForm((f) => ({ ...f, account_name: e.target.value }))} />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setBankModal(null)}>Batal</button>
+              <button
+                className="btn btn-primary"
+                onClick={() => bankMutation.mutate(bankForm)}
+                disabled={bankMutation.isPending}
+              >
+                {bankMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bankDeleteId && (
+        <div className="modal-overlay show" onClick={() => setBankDeleteId(null)}>
+          <div className="modal confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-body">
+              <h3 className="modal-title">Hapus rekening bank?</h3>
+              <p className="modal-desc">Rekening ini tidak akan lagi digunakan pada invoice baru. Tindakan ini tidak dapat dibatalkan.</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setBankDeleteId(null)}>Batal</button>
+              <button
+                className="btn btn-danger"
+                onClick={() => bankDeleteMutation.mutate(bankDeleteId)}
+                disabled={bankDeleteMutation.isPending}
+              >
+                {bankDeleteMutation.isPending ? 'Menghapus...' : 'Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

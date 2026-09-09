@@ -87,4 +87,11 @@ export const paymentCategoryApi = {
   update: (data)   => api.put('/payment-categories', data),
 };
 
+export const bankAccountApi = {
+  list:   ()       => api.get('/bank-accounts'),
+  create: (data)   => api.post('/bank-accounts', data),
+  update: (id, data) => api.put(`/bank-accounts/${id}`, data),
+  remove: (id)     => api.delete(`/bank-accounts/${id}`),
+};
+
 export default api;

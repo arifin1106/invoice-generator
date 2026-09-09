@@ -19,5 +19,6 @@ class Setting extends Model
         'signer_title',
         'signer_signature',
         'payment_message',
+        'next_invoice_number',
     ];
 }

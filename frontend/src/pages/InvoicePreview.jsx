@@ -385,14 +385,14 @@ export default function InvoicePreview() {
 
         {/* Bank & Signature */}
         <div className="inv-footer">
-          {setting?.bank_name && (
+          {(invoice?.bankAccount?.bank_name || invoice?.bankAccount?.account_number) && (
             <div className="inv-bank">
               <div className="inv-bank-title">Detail Pembayaran</div>
               <table>
                 <tbody>
-                  {setting.bank_name && <tr><td>Bank</td><td>:</td><td>{setting.bank_name}</td></tr>}
-                  {setting.bank_account_number && <tr><td>No. Rekening</td><td>:</td><td><strong>{setting.bank_account_number}</strong></td></tr>}
-                  {setting.bank_account_name && <tr><td>Atas Nama</td><td>:</td><td>{setting.bank_account_name}</td></tr>}
+                  {invoice.bankAccount?.bank_name && <tr><td>Bank</td><td>:</td><td>{invoice.bankAccount.bank_name}</td></tr>}
+                  {invoice.bankAccount?.account_number && <tr><td>No. Rekening</td><td>:</td><td><strong>{invoice.bankAccount.account_number}</strong></td></tr>}
+                  {invoice.bankAccount?.account_name && <tr><td>Atas Nama</td><td>:</td><td>{invoice.bankAccount.account_name}</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -542,26 +542,26 @@ export default function InvoicePreview() {
         )}
 
         <div className="mdoc-card">
-          {(setting?.bank_name || setting?.bank_account_number) && (
+          {(invoice?.bankAccount?.bank_name || invoice?.bankAccount?.account_number) && (
             <>
               <h2 className="mdoc-section-title">Detail Pembayaran</h2>
               <div className="mdoc-meta mdoc-bank">
-                {setting?.bank_name && (
+                {invoice?.bankAccount?.bank_name && (
                   <div className="mdoc-meta-row">
                     <span className="mdoc-meta-label">Bank</span>
-                    <span className="mdoc-meta-value">{setting.bank_name}</span>
+                    <span className="mdoc-meta-value">{invoice.bankAccount.bank_name}</span>
                   </div>
                 )}
-                {setting?.bank_account_number && (
+                {invoice?.bankAccount?.account_number && (
                   <div className="mdoc-meta-row">
                     <span className="mdoc-meta-label">No. Rekening</span>
-                    <span className="mdoc-meta-value"><strong>{setting.bank_account_number}</strong></span>
+                    <span className="mdoc-meta-value"><strong>{invoice.bankAccount.account_number}</strong></span>
                   </div>
                 )}
-                {setting?.bank_account_name && (
+                {invoice?.bankAccount?.account_name && (
                   <div className="mdoc-meta-row">
                     <span className="mdoc-meta-label">Atas Nama</span>
-                    <span className="mdoc-meta-value">{setting.bank_account_name}</span>
+                    <span className="mdoc-meta-value">{invoice.bankAccount.account_name}</span>
                   </div>
                 )}
               </div>

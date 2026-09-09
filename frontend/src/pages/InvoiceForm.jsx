@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { invoiceApi, paymentCategoryApi } from '../services/api';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
+import { invoiceApi, paymentCategoryApi, bankAccountApi } from '../services/api';
 import { formatRupiah, toInputDate } from '../utils/format';
-import { LEVELS } from '../utils/constants';
+import { LEVELS, levelToCategory } from '../utils/constants';
 import CurrencyInput from '../components/CurrencyInput';
 import { Plus, Trash2, Save, ArrowLeft, RefreshCw, ChevronDown, ChevronUp, Wallet } from 'lucide-react';
 
@@ -47,19 +47,22 @@ const statusBadgeCls = {
 export default function InvoiceForm() {
   const navigate   = useNavigate();
   const { id }     = useParams();
+  const [searchParams] = useSearchParams();
   const qc         = useQueryClient();
   const isEdit     = Boolean(id);
+  const category   = searchParams.get('category');
   const [toast, setToast] = useState(null);
   const [expandedItems, setExpandedItems] = useState({});
   const [activeRowIndex, setActiveRowIndex] = useState(null);
 
-  const { register, handleSubmit, control, watch, setValue, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
       invoice_number: '',
       date:           new Date().toISOString().split('T')[0],
       due_date:       '',
       student_name:   '',
       student_level:  '',
+      bank_account_id: null,
       notes:          '',
       items: [{ ...defaultItem }],
     },
@@ -71,6 +74,12 @@ export default function InvoiceForm() {
   const { data: categories } = useQuery({
     queryKey: ['payment-categories'],
     queryFn: () => paymentCategoryApi.list().then((r) => r.data),
+  });
+
+  // Fetch bank accounts for the dropdown override
+  const { data: banks = [] } = useQuery({
+    queryKey: ['bank-accounts'],
+    queryFn: () => bankAccountApi.list().then((r) => r.data),
   });
 
   // Load existing invoice for edit
@@ -88,6 +97,7 @@ export default function InvoiceForm() {
         due_date:       toInputDate(existing.due_date),
         student_name:   existing.student_name,
         student_level:  existing.student_level,
+        bank_account_id: existing.bankAccount?.id ?? existing.bank_account_id ?? null,
         notes:          existing.notes ?? '',
         items: existing.items.map((i) => ({
           description:    i.description,
@@ -119,9 +129,14 @@ export default function InvoiceForm() {
   useEffect(() => {
     if (!isEdit) {
       handleGenerateNumber();
+      if (category === 'preschool') {
+        setValue('student_level', 'P1');
+      } else if (category === 'primary') {
+        setValue('student_level', 'Primary');
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEdit]);
+  }, [isEdit, category]);
 
   // Toggle expand/collapse for item payments
   const toggleExpand = (index) => {
@@ -159,9 +174,9 @@ export default function InvoiceForm() {
   };
 
   // Auto-calculate totals
-  const watchedItems = watch('items') || [];
-  const watchedLevel = watch('student_level');
-  const computed = watchedItems.reduce(
+  const watchedItems = useWatch({ control, name: 'items' }) || [];
+  const watchedLevel = useWatch({ control, name: 'student_level' });
+  const computed = useMemo(() => watchedItems.reduce(
     (acc, item) => {
       const amount      = parseFloat(item.amount) || 0;
       const discType    = item.discount_type;
@@ -188,7 +203,7 @@ export default function InvoiceForm() {
       };
     },
     { totalBeforeDiscount: 0, totalDiscount: 0, totalFinal: 0, totalPaid: 0 }
-  );
+  ), [watchedItems]);
 
   const remaining = Math.max(0, computed.totalFinal - computed.totalPaid);
 
@@ -220,6 +235,7 @@ export default function InvoiceForm() {
   const onSubmit = (data) => {
     const sanitized = {
       ...data,
+      bank_account_id: Number.isFinite(data.bank_account_id) ? data.bank_account_id : null,
       items: data.items.map((item) => ({
         ...item,
         status:         computeItemStatus(item),
@@ -313,6 +329,30 @@ export default function InvoiceForm() {
                 <option value="">Pilih level...</option>
                 {LEVELS.map((l) => <option key={l}>{l}</option>)}
               </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Rekening Bank</label>
+              {(() => {
+                const cat = watchedLevel ? levelToCategory(watchedLevel) : '';
+                const opts = banks.filter((b) =>
+                  !cat
+                    ? b.category === 'umum'
+                    : (b.category === cat || b.category === 'umum')
+                );
+                return (
+                  <select className="form-input" {...register('bank_account_id', { valueAsNumber: true })}>
+                    <option value="">
+                      {cat ? 'Otomatis (sesuai kategori)' : 'Pilih level untuk otomatis'}
+                    </option>
+                    {opts.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.bank_name} — {b.account_number}{cat && b.category === cat ? '' : ' (Umum)'}
+                      </option>
+                    ))}
+                  </select>
+                );
+              })()}
             </div>
 
             <div className="form-group">
