@@ -5,6 +5,7 @@ import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { invoiceApi, paymentCategoryApi, bankAccountApi } from '../services/api';
 import { formatRupiah, toInputDate } from '../utils/format';
 import { LEVELS, levelToCategory } from '../utils/constants';
+import { computeItemStatus, statusBadgeCls } from '../utils/status';
 import CurrencyInput from '../components/CurrencyInput';
 import { Plus, Trash2, Save, ArrowLeft, RefreshCw, ChevronDown, ChevronUp, Wallet } from 'lucide-react';
 
@@ -18,31 +19,6 @@ const defaultItem = {
 };
 
 const defaultPayment = { amount: '', payment_date: new Date().toISOString().split('T')[0], notes: '' };
-
-// Meniru logika status di hook saving model Invoice (backend): paid vs nominal setelah diskon
-const round2 = (n) => Math.round((parseFloat(n) || 0) * 100) / 100;
-
-const computeItemStatus = (item = {}) => {
-  const amount = parseFloat(item.amount) || 0;
-  let discount = 0;
-  if (item.discount_type === 'percentage') {
-    discount = amount * ((parseFloat(item.discount_value) || 0) / 100);
-  } else if (item.discount_type === 'fixed') {
-    discount = Math.min(parseFloat(item.discount_value) || 0, amount);
-  }
-  const finalAmount = round2(amount - discount);
-  const paid = round2((item.payments || []).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0));
-
-  if (paid <= 0) return 'Belum Lunas';
-  if (paid >= finalAmount) return 'Lunas';
-  return 'Sebagian';
-};
-
-const statusBadgeCls = {
-  'Lunas': 'badge-paid',
-  'Sebagian': 'badge-partial',
-  'Belum Lunas': 'badge-unpaid',
-};
 
 export default function InvoiceForm() {
   const navigate   = useNavigate();

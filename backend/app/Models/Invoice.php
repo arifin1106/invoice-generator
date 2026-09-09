@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model
 {
@@ -23,10 +23,10 @@ class Invoice extends Model
     ];
 
     protected $casts = [
-        'date'              => 'date',
-        'due_date'          => 'date',
-        'total_amount'      => 'decimal:2',
-        'amount_received'   => 'decimal:2',
+        'date' => 'date',
+        'due_date' => 'date',
+        'total_amount' => 'decimal:2',
+        'amount_received' => 'decimal:2',
         'remaining_balance' => 'decimal:2',
     ];
 
@@ -74,8 +74,8 @@ class Invoice extends Model
                         }
                     }
 
-                    $finalAmount = (float) $item->amount - $discountAmount;
-                    $paidAmount = (float) $item->payments->sum('amount');
+                    $finalAmount = round(((float) $item->amount - $discountAmount) * 100) / 100;
+                    $paidAmount = round((float) $item->payments->sum('amount') * 100) / 100;
 
                     $totalDiscount += $discountAmount;
                     $totalPaid += $paidAmount;
@@ -88,6 +88,8 @@ class Invoice extends Model
                     } else {
                         $item->status = 'Sebagian';
                     }
+
+                    $item->saveQuietly();
                 }
 
                 $invoice->total_amount = $totalFinal;

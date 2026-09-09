@@ -165,9 +165,6 @@ body {
     if ($setting && $setting->signer_signature) {
         $sigSrc = $toBase64(storage_path('app/public/' . $setting->signer_signature));
     }
-    if (!$sigSrc) {
-        $sigSrc = $toBase64(public_path('asset/ttd-ratih.png'));
-    }
 
     $hasNote = !empty(trim($invoice->notes ?? '')) || !empty(trim($setting?->payment_message ?? ''));
 
@@ -285,8 +282,8 @@ body {
                 $itemDiscount = min((float) $item->discount_value, (float) $item->amount);
             }
         }
-        $itemPaid = (float) $item->payments->sum('amount');
-        $itemFinal = (float) $item->amount - $itemDiscount;
+        $itemPaid = round((float) $item->payments->sum('amount') * 100) / 100;
+        $itemFinal = round(((float) $item->amount - $itemDiscount) * 100) / 100;
     @endphp
     <tr>
       <td class="cn">{{ $i + 1 }}</td>
@@ -316,7 +313,7 @@ body {
           -
         @endif
       </td>
-      <td class="cs">{{ $item->status ?? ($itemPaid <= 0 ? 'Belum Lunas' : ($itemPaid >= $itemFinal ? 'Lunas' : 'Sebagian')) }}</td>
+      <td class="cs">{{ $itemPaid <= 0 ? 'Belum Lunas' : ($itemPaid >= $itemFinal ? 'Lunas' : 'Sebagian') }}</td>
     </tr>
     @endforeach
   </tbody>

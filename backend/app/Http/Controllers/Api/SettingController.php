@@ -10,16 +10,35 @@ use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
 {
+    private function toBase64(string $path): ?string
+    {
+        $abs = storage_path('app/public/' . $path);
+        if (! $path || ! file_exists($abs)) {
+            return null;
+        }
+        $ext  = strtolower(pathinfo($abs, PATHINFO_EXTENSION));
+        $mime = match ($ext) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'gif'         => 'image/gif',
+            'webp'        => 'image/webp',
+            'svg'         => 'image/svg+xml',
+            default       => 'image/png',
+        };
+        $data = @file_get_contents($abs);
+        return $data ? 'data:' . $mime . ';base64,' . base64_encode($data) : null;
+    }
+
     public function show(): JsonResponse
     {
         $setting = Setting::first();
         if ($setting) {
-            // Return full public URLs so frontend can use them directly
+            // Kembalikan data-URL (bukan path /storage) agar selalu tampil di
+            // frontend (tanpa symlink storage:link) dan konsisten dengan PDF.
             $setting->logo_url      = $setting->institution_logo
-                ? Storage::disk('public')->url($setting->institution_logo)
+                ? $this->toBase64($setting->institution_logo)
                 : null;
             $setting->signature_url = $setting->signer_signature
-                ? Storage::disk('public')->url($setting->signer_signature)
+                ? $this->toBase64($setting->signer_signature)
                 : null;
         }
         return response()->json($setting);

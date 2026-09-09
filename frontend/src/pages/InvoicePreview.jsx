@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { invoiceApi, settingApi } from '../services/api';
 import { formatRupiah, formatDate } from '../utils/format';
+import { computeItemStatus, statusBadgeCls } from '../utils/status';
 import { sharePdfViaWhatsApp } from '../utils/share';
 import { ArrowLeft, FileDown, Pencil, Printer, Loader2, Share2, Copy, MessageCircle, Mail } from 'lucide-react';
 import ScaleToFit from '../components/ScaleToFit';
@@ -276,7 +277,7 @@ export default function InvoicePreview() {
                 disc = Math.min(parseFloat(item.discount_value) || 0, amount);
               }
               const paid = parseFloat(item.paid_amount) || item.payments?.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0) || 0;
-              const itemStatus = item.status || (paid <= 0 ? 'Belum Lunas' : (paid >= amount - disc ? 'Lunas' : 'Sebagian'));
+              const itemStatus = computeItemStatus(item);
 
               return (
                 <tr key={item.id}>
@@ -299,7 +300,7 @@ export default function InvoicePreview() {
                     {paid > 0 ? <span className="text-green">{formatRupiah(paid)}</span> : '-'}
                   </td>
                   <td className="td-status">
-                    <span className={`badge ${itemStatus === 'Lunas' ? 'badge-paid' : itemStatus === 'Sebagian' ? 'badge-partial' : 'badge-unpaid'}`}>
+                    <span className={`badge ${statusBadgeCls[itemStatus] || 'badge-unpaid'}`}>
                       {itemStatus}
                     </span>
                   </td>
@@ -456,7 +457,7 @@ export default function InvoicePreview() {
                 disc = Math.min(parseFloat(item.discount_value) || 0, amount);
               }
               const paid = parseFloat(item.paid_amount) || item.payments?.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0) || 0;
-              const itemStatus = item.status || (paid <= 0 ? 'Belum Lunas' : (paid >= amount - disc ? 'Lunas' : 'Sebagian'));
+              const itemStatus = computeItemStatus(item);
 
               return (
                 <div key={item.id} className="mdoc-item">
@@ -475,7 +476,7 @@ export default function InvoicePreview() {
                     <span className={paid > 0 ? 'text-green' : ''}>{paid > 0 ? formatRupiah(paid) : '-'}</span>
                   </div>
                   <div className="mdoc-item-foot">
-                    <span className={`badge ${itemStatus === 'Lunas' ? 'badge-paid' : itemStatus === 'Sebagian' ? 'badge-partial' : 'badge-unpaid'}`}>
+                    <span className={`badge ${statusBadgeCls[itemStatus] || 'badge-unpaid'}`}>
                       {itemStatus}
                     </span>
                   </div>

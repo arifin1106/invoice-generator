@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Invoice;
 use App\Models\BankAccount;
-use App\Models\Payment;
+use App\Models\Invoice;
 use App\Models\Setting;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +24,7 @@ class InvoiceController extends Controller
             $search = strtolower($request->search);
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(student_name) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(invoice_number) LIKE ?', ["%{$search}%"]);
+                    ->orWhereRaw('LOWER(invoice_number) LIKE ?', ["%{$search}%"]);
             });
         }
 
@@ -48,9 +47,9 @@ class InvoiceController extends Controller
 
         $response = $invoices->toArray();
         $response['stats'] = [
-            'paid'    => (clone $statsQuery)->where('status', 'paid')->count(),
+            'paid' => (clone $statsQuery)->where('status', 'paid')->count(),
             'partial' => (clone $statsQuery)->where('status', 'partial')->count(),
-            'unpaid'  => (clone $statsQuery)->where('status', 'unpaid')->count(),
+            'unpaid' => (clone $statsQuery)->where('status', 'unpaid')->count(),
             'revenue' => (clone $statsQuery)->sum('amount_received'),
         ];
 
@@ -68,54 +67,54 @@ class InvoiceController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'invoice_number'      => 'required|string|unique:invoices',
-            'date'                => 'required|date',
-            'due_date'            => 'required|date',
-            'student_name'        => 'required|string|max:255',
-            'student_level'       => 'required|string|max:50',
-            'bank_account_id'     => 'nullable|exists:bank_accounts,id',
-            'notes'               => 'nullable|string',
-            'items'               => 'required|array|min:1',
+            'invoice_number' => 'required|string|unique:invoices',
+            'date' => 'required|date',
+            'due_date' => 'required|date',
+            'student_name' => 'required|string|max:255',
+            'student_level' => 'required|string|max:50',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'notes' => 'nullable|string',
+            'items' => 'required|array|min:1',
             'items.*.description' => 'required|string',
-            'items.*.amount'      => 'required|numeric|min:0',
-            'items.*.discount_type'  => 'nullable|in:percentage,fixed',
+            'items.*.amount' => 'required|numeric|min:0',
+            'items.*.discount_type' => 'nullable|in:percentage,fixed',
             'items.*.discount_value' => 'nullable|numeric|min:0',
-            'items.*.payments'       => 'nullable|array',
-            'items.*.payments.*.amount'      => 'required_with:items.*.payments|numeric|min:0',
+            'items.*.payments' => 'nullable|array',
+            'items.*.payments.*.amount' => 'required_with:items.*.payments|numeric|min:0',
             'items.*.payments.*.payment_date' => 'required_with:items.*.payments|date',
-            'items.*.payments.*.notes'         => 'nullable|string',
+            'items.*.payments.*.notes' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
         try {
             $invoice = Invoice::create([
                 'invoice_number' => $validated['invoice_number'],
-                'date'           => $validated['date'],
-                'due_date'       => $validated['due_date'],
-                'student_name'   => $validated['student_name'],
-                'student_level'  => $validated['student_level'],
+                'date' => $validated['date'],
+                'due_date' => $validated['due_date'],
+                'student_name' => $validated['student_name'],
+                'student_level' => $validated['student_level'],
                 'bank_account_id' => $validated['bank_account_id']
                     ?? $this->resolveBankId($validated['student_level']),
-                'total_amount'   => 0,
+                'total_amount' => 0,
                 'amount_received' => 0,
-                'notes'          => $validated['notes'] ?? null,
+                'notes' => $validated['notes'] ?? null,
             ]);
 
             foreach ($validated['items'] as $index => $item) {
                 $invoiceItem = $invoice->items()->create([
-                    'description'    => $item['description'],
-                    'amount'         => $item['amount'],
-                    'discount_type'  => $item['discount_type'] ?? null,
+                    'description' => $item['description'],
+                    'amount' => $item['amount'],
+                    'discount_type' => $item['discount_type'] ?? null,
                     'discount_value' => $item['discount_value'] ?? null,
-                    'sort_order'     => $index,
+                    'sort_order' => $index,
                 ]);
 
-                if (!empty($item['payments'])) {
+                if (! empty($item['payments'])) {
                     foreach ($item['payments'] as $payment) {
                         $invoiceItem->payments()->create([
-                            'amount'       => $payment['amount'],
+                            'amount' => $payment['amount'],
                             'payment_date' => $payment['payment_date'],
-                            'notes'        => $payment['notes'] ?? null,
+                            'notes' => $payment['notes'] ?? null,
                         ]);
                     }
                 }
@@ -125,10 +124,12 @@ class InvoiceController extends Controller
             $invoice->save();
 
             DB::commit();
+
             return response()->json($invoice, 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Gagal menyimpan invoice: ' . $e->getMessage()], 500);
+
+            return response()->json(['message' => 'Gagal menyimpan invoice: '.$e->getMessage()], 500);
         }
     }
 
@@ -136,7 +137,7 @@ class InvoiceController extends Controller
     {
         $invoice->load('items.payments', 'bankAccount');
 
-        if (!$invoice->bank_account_id) {
+        if (! $invoice->bank_account_id) {
             $bank = $invoice->resolveBankAccount();
             if ($bank) {
                 $invoice->bank_account_id = $bank->id;
@@ -151,56 +152,56 @@ class InvoiceController extends Controller
     public function update(Request $request, Invoice $invoice): JsonResponse
     {
         $validated = $request->validate([
-            'invoice_number'      => 'required|string|unique:invoices,invoice_number,' . $invoice->id,
-            'date'                => 'required|date',
-            'due_date'            => 'required|date',
-            'student_name'        => 'required|string|max:255',
-            'student_level'       => 'required|string|max:50',
-            'bank_account_id'     => 'nullable|exists:bank_accounts,id',
-            'notes'               => 'nullable|string',
-            'items'               => 'required|array|min:1',
+            'invoice_number' => 'required|string|unique:invoices,invoice_number,'.$invoice->id,
+            'date' => 'required|date',
+            'due_date' => 'required|date',
+            'student_name' => 'required|string|max:255',
+            'student_level' => 'required|string|max:50',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'notes' => 'nullable|string',
+            'items' => 'required|array|min:1',
             'items.*.description' => 'required|string',
-            'items.*.amount'      => 'required|numeric|min:0',
-            'items.*.discount_type'  => 'nullable|in:percentage,fixed',
+            'items.*.amount' => 'required|numeric|min:0',
+            'items.*.discount_type' => 'nullable|in:percentage,fixed',
             'items.*.discount_value' => 'nullable|numeric|min:0',
-            'items.*.payments'       => 'nullable|array',
-            'items.*.payments.*.id'             => 'nullable|integer',
-            'items.*.payments.*.amount'         => 'required_with:items.*.payments|numeric|min:0',
-            'items.*.payments.*.payment_date'   => 'required_with:items.*.payments|date',
-            'items.*.payments.*.notes'           => 'nullable|string',
+            'items.*.payments' => 'nullable|array',
+            'items.*.payments.*.id' => 'nullable|integer',
+            'items.*.payments.*.amount' => 'required_with:items.*.payments|numeric|min:0',
+            'items.*.payments.*.payment_date' => 'required_with:items.*.payments|date',
+            'items.*.payments.*.notes' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
         try {
             $invoice->update([
                 'invoice_number' => $validated['invoice_number'],
-                'date'           => $validated['date'],
-                'due_date'       => $validated['due_date'],
-                'student_name'   => $validated['student_name'],
-                'student_level'  => $validated['student_level'],
+                'date' => $validated['date'],
+                'due_date' => $validated['due_date'],
+                'student_name' => $validated['student_name'],
+                'student_level' => $validated['student_level'],
                 'bank_account_id' => $validated['bank_account_id']
                     ?? $this->resolveBankId($validated['student_level']),
-                'total_amount'   => 0,
+                'total_amount' => 0,
                 'amount_received' => 0,
-                'notes'          => $validated['notes'] ?? null,
+                'notes' => $validated['notes'] ?? null,
             ]);
 
             $invoice->items()->delete();
             foreach ($validated['items'] as $index => $item) {
                 $invoiceItem = $invoice->items()->create([
-                    'description'    => $item['description'],
-                    'amount'         => $item['amount'],
-                    'discount_type'  => $item['discount_type'] ?? null,
+                    'description' => $item['description'],
+                    'amount' => $item['amount'],
+                    'discount_type' => $item['discount_type'] ?? null,
                     'discount_value' => $item['discount_value'] ?? null,
-                    'sort_order'     => $index,
+                    'sort_order' => $index,
                 ]);
 
-                if (!empty($item['payments'])) {
+                if (! empty($item['payments'])) {
                     foreach ($item['payments'] as $payment) {
                         $invoiceItem->payments()->create([
-                            'amount'       => $payment['amount'],
+                            'amount' => $payment['amount'],
                             'payment_date' => $payment['payment_date'],
-                            'notes'        => $payment['notes'] ?? null,
+                            'notes' => $payment['notes'] ?? null,
                         ]);
                     }
                 }
@@ -210,16 +211,19 @@ class InvoiceController extends Controller
             $invoice->save();
 
             DB::commit();
+
             return response()->json($invoice);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Gagal mengupdate invoice: ' . $e->getMessage()], 500);
+
+            return response()->json(['message' => 'Gagal mengupdate invoice: '.$e->getMessage()], 500);
         }
     }
 
     public function destroy(Invoice $invoice): JsonResponse
     {
         $invoice->delete();
+
         return response()->json(['message' => 'Invoice berhasil dihapus.']);
     }
 
@@ -231,16 +235,42 @@ class InvoiceController extends Controller
 
             $bank = $invoice->resolveBankAccount();
 
-            $pdf = Pdf::loadView('invoice-pdf', compact('invoice', 'setting', 'bank'))
-                ->setPaper('a4', 'portrait');
+            // Cache PDF hasil render berdasarkan kondisi data invoice.
+            $itemMtimes = $invoice->items->map(fn ($i) => $i->updated_at?->toDateTimeString()
+                .':'.$i->payments->map(fn ($p) => $p->updated_at?->toDateTimeString())->join(','));
+            $cacheKey = 'invoice_'.$invoice->id.'_'
+                .md5($invoice->updated_at?->toDateTimeString()
+                    .'|'.$itemMtimes->join(';')
+                    .'|'.($bank?->updated_at?->toDateTimeString() ?? '')
+                    .'|'.($setting?->updated_at?->toDateTimeString() ?? ''));
 
-            $filename = 'Invoice-' . str_replace('/', '-', $invoice->invoice_number) . '.pdf';
-            return $pdf->download($filename);
+            $pdfCache = storage_path('framework/dompdf/cache');
+            if (! is_dir($pdfCache)) {
+                mkdir($pdfCache, 0755, true);
+            }
+
+            $cacheFile = $pdfCache.'/'.$cacheKey.'.pdf';
+            if (! file_exists($cacheFile)) {
+                // Hapus cache versi lama untuk invoice yang sama agar tidak menumpuk.
+                foreach (glob($pdfCache.'/invoice_'.$invoice->id.'_*.pdf') ?: [] as $old) {
+                    if ($old !== $cacheFile) {
+                        @unlink($old);
+                    }
+                }
+
+                $pdf = Pdf::loadView('invoice-pdf', compact('invoice', 'setting', 'bank'))
+                    ->setPaper('a4', 'portrait');
+                file_put_contents($cacheFile, $pdf->output());
+            }
+
+            $filename = 'Invoice-'.str_replace('/', '-', $invoice->invoice_number).'.pdf';
+
+            return response()->download($cacheFile, $filename, ['Content-Type' => 'application/pdf']);
         } catch (\Throwable $e) {
             return response()->json([
-                'message' => 'PDF Error: ' . $e->getMessage(),
+                'message' => 'PDF Error: '.$e->getMessage(),
                 'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'line' => $e->getLine(),
             ], 500);
         }
     }
@@ -250,7 +280,7 @@ class InvoiceController extends Controller
         $expiresAt = now()->addDays(self::SHARE_URL_DAYS);
 
         return response()->json([
-            'url'        => URL::temporarySignedRoute('public.invoices.pdf', $expiresAt, ['invoice' => $invoice->id]),
+            'url' => URL::temporarySignedRoute('public.invoices.pdf', $expiresAt, ['invoice' => $invoice->id]),
             'expires_at' => $expiresAt->toIso8601String(),
         ]);
     }
@@ -262,9 +292,9 @@ class InvoiceController extends Controller
 
     public function generateNumber(): JsonResponse
     {
-        $now   = now();
+        $now = now();
         $month = $now->format('m');
-        $year  = $now->format('Y');
+        $year = $now->format('Y');
 
         $romanMonth = [
             '01' => 'I',   '02' => 'II',  '03' => 'III', '04' => 'IV',
@@ -273,7 +303,7 @@ class InvoiceController extends Controller
         ];
 
         $setting = Setting::first();
-        $number  = $setting->next_invoice_number;
+        $number = $setting->next_invoice_number;
         $setting->increment('next_invoice_number');
 
         $invoiceNumber = sprintf('%02d/JACOS/INV/%s/%s', $number, $romanMonth[$month], $year);
