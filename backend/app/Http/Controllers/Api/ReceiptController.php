@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exports\ReceiptExport;
 use App\Http\Controllers\Controller;
+use App\Imports\ReceiptImport;
 use App\Models\Receipt;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 
 class ReceiptController extends Controller
@@ -179,6 +181,43 @@ class ReceiptController extends Controller
     public function publicPdf(Receipt $receipt)
     {
         return $this->downloadPdf($receipt);
+    }
+
+    public function export()
+    {
+        $export = new ReceiptExport();
+
+        return $export->download();
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls|max:10240',
+        ]);
+
+        try {
+            $import = new ReceiptImport();
+            $import->import($request->file('file')->getRealPath());
+
+            return response()->json([
+                'message'  => 'Import kwitansi selesai.',
+                'imported' => $import->imported,
+                'skipped'  => $import->skipped,
+                'errors'   => $import->errors,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Gagal import kwitansi', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Gagal melakukan import. Pastikan format file sesuai template.',
+            ], 500);
+        }
+    }
+
+    public function importTemplate()
+    {
+        return ReceiptExport::template();
     }
 
     /**

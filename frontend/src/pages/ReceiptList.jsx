@@ -1,12 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { receiptApi } from '../services/api';
 import { formatRupiah, formatDate } from '../utils/format';
 import useDebounce from '../hooks/useDebounce';
 import {
-  Search, Eye, Pencil, Trash2, FileDown, PlusCircle, 
-  Receipt, FileText, CheckCircle, Shirt, Utensils, Bus
+  Search, Eye, Pencil, Trash2, FileDown, PlusCircle,
+  Receipt, FileText, CheckCircle, Shirt, Utensils, Bus,
+  Download, Upload, X, FileSpreadsheet, Loader2, AlertCircle,
 } from 'lucide-react';
 
 export default function ReceiptList() {
@@ -16,6 +17,11 @@ export default function ReceiptList() {
   const [category, setCategory] = useState('');
   const [page, setPage]         = useState(1);
   const [deleteId, setDeleteId] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile]         = useState(null);
+  const [importLoading, setImportLoading]   = useState(false);
+  const [importResult, setImportResult]     = useState(null);
+  const fileInputRef = useRef(null);
 
   const debouncedSearch = useDebounce(search);
 
@@ -34,6 +40,63 @@ export default function ReceiptList() {
     },
   });
 
+  /* Export to XLSX */
+  const handleExport = async () => {
+    try {
+      const res = await receiptApi.exportXlsx();
+      const blob = new Blob([res.data], { type: res.headers['content-type'] });
+      const url  = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Kwitansi-Export.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('Gagal mengunduh file export.');
+    }
+  };
+
+  /* Download import template */
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await receiptApi.downloadTemplate();
+      const blob = new Blob([res.data], { type: res.headers['content-type'] });
+      const url  = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Template-Import-Kwitansi.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('Gagal mengunduh template.');
+    }
+  };
+
+  /* Import XLSX */
+  const handleImport = async () => {
+    if (!importFile) return;
+    setImportLoading(true);
+    setImportResult(null);
+    try {
+      const res = await receiptApi.importXlsx(importFile);
+      setImportResult(res.data);
+      qc.invalidateQueries(['receipts']);
+    } catch (err) {
+      setImportResult({
+        message: err.response?.data?.message || 'Gagal melakukan import.',
+        imported: 0,
+        skipped: 0,
+        errors: [],
+      });
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   const receipts = data?.data ?? [];
 
   const stats = useMemo(() => ({
@@ -50,10 +113,20 @@ export default function ReceiptList() {
           <h1 className="page-title">Kwitansi</h1>
           <p className="page-subtitle">Kelola semua kwitansi pembayaran & pembelian</p>
         </div>
-        <Link to="/receipts/new" className="btn btn-primary">
-          <PlusCircle size={16} />
-          <span>Buat Kwitansi</span>
-        </Link>
+        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+          <button className="btn btn-secondary btn-sm" onClick={handleExport}>
+            <Download size={15} />
+            <span>Export Excel</span>
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={() => { setShowImportModal(true); setImportResult(null); setImportFile(null); }}>
+            <Upload size={15} />
+            <span>Import</span>
+          </button>
+          <Link to="/receipts/new" className="btn btn-primary btn-sm">
+            <PlusCircle size={15} />
+            <span>Buat Kwitansi</span>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -206,6 +279,82 @@ export default function ReceiptList() {
               >
                 {deleteMutation.isLoading ? 'Menghapus...' : 'Hapus'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={() => setShowImportModal(false)}>
+          <div className="modal modal--import" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Import Kwitansi dari Excel</h3>
+              <button className="modal-close" onClick={() => setShowImportModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {!importResult ? (
+              <div className="modal-body">
+                <div className="import-dropzone" onClick={() => fileInputRef.current?.click()}>
+                  <FileSpreadsheet size={40} className="empty-icon" />
+                  {importFile ? (
+                    <p className="import-filename">{importFile.name}</p>
+                  ) : (
+                    <p>Klik untuk memilih file <strong>.xlsx</strong></p>
+                  )}
+                  <p className="import-hint">Maks. 10 MB. Format sesuai template.</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    style={{ display: 'none' }}
+                    onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+                <div className="import-actions">
+                  <button className="btn btn-ghost btn-sm" onClick={handleDownloadTemplate} disabled={importLoading}>
+                    <Download size={14} />
+                    <span>Unduh Template</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="modal-body">
+                <div className={`import-result import-result--${importResult.imported > 0 ? 'success' : 'warning'}`}>
+                  <div className="import-result-icon">
+                    {importResult.imported > 0 ? <CheckCircle size={36} /> : <AlertCircle size={36} />}
+                  </div>
+                  <p className="import-result-msg">{importResult.message}</p>
+                  <div className="import-result-stats">
+                    <span className="import-stat import-stat--ok">{importResult.imported} berhasil</span>
+                    <span className="import-stat import-stat--skip">{importResult.skipped} dilewati</span>
+                  </div>
+                  {importResult.errors?.length > 0 && (
+                    <ul className="import-result-errors">
+                      {importResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="modal-actions">
+              {importResult ? (
+                <button className="btn btn-primary btn-sm" onClick={() => setShowImportModal(false)}>Tutup</button>
+              ) : (
+                <>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setShowImportModal(false)}>Batal</button>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    disabled={!importFile || importLoading}
+                    onClick={handleImport}
+                  >
+                    {importLoading ? <><Loader2 size={14} className="spin-icon" /> Mengimport...</> : 'Import Sekarang'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

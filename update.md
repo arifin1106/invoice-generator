@@ -35,3 +35,8 @@
 5. Password profil minimum 8 karakter dengan huruf besar, huruf kecil, dan angka.
 6. Token expired/401 di frontend otomatis bersih & redirect ke halaman login (tidak lagi "gantung").
 7. Tombol "Logout Semua Perangkat" tersedia di profil — menghapus semua token aktif sekaligus.
+
+### update v7 - Export semua data invoice dan kwitansi ke excel/CSV
+
+1. Penambahan fitur export pada semua invoice dan kwitansi agar bisa backup data invoice yang sudah di buat dalam sistem.
+2. penambahan fitur import juga pada invoice dan kwitansi untuk mempermudah saat migrasi data.

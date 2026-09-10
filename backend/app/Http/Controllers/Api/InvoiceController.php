@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exports\InvoiceExport;
 use App\Http\Controllers\Controller;
+use App\Imports\InvoiceImport;
 use App\Models\BankAccount;
 use App\Models\Invoice;
 use App\Models\Setting;
@@ -10,6 +12,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 
 class InvoiceController extends Controller
@@ -314,6 +317,44 @@ class InvoiceController extends Controller
         $invoiceNumber = sprintf('%02d/JACOS/INV/%s/%s', $number, $romanMonth[$month], $year);
 
         return response()->json(['invoice_number' => $invoiceNumber]);
+    }
+
+    public function export(Request $request)
+    {
+        $studentLevel = $request->get('student_level');
+        $export = new InvoiceExport($studentLevel);
+
+        return $export->download();
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls|max:10240',
+        ]);
+
+        try {
+            $import = new InvoiceImport();
+            $import->import($request->file('file')->getRealPath());
+
+            return response()->json([
+                'message' => 'Import invoice selesai.',
+                'imported' => $import->imported,
+                'skipped'  => $import->skipped,
+                'errors'   => $import->errors,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Gagal import invoice', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Gagal melakukan import. Pastikan format file sesuai template.',
+            ], 500);
+        }
+    }
+
+    public function importTemplate()
+    {
+        return InvoiceExport::template();
     }
 
     private function resolveBankId(string $studentLevel): ?int

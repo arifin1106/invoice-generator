@@ -45,6 +45,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Invoice number generator
     Route::get('/invoices/generate-number', [InvoiceController::class, 'generateNumber']);
 
+    // Invoice Export/Import (harus sebelum apiResource agar tidak tertangkap {invoice})
+    Route::get('/invoices/export', [InvoiceController::class, 'export']);
+    Route::post('/invoices/import', [InvoiceController::class, 'import']);
+    Route::get('/invoices/import-template', [InvoiceController::class, 'importTemplate']);
+
     // Invoices CRUD
     Route::apiResource('invoices', InvoiceController::class);
 
@@ -54,6 +59,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Receipt number generator
     Route::get('/receipts/generate-number', [ReceiptController::class, 'generateNumber']);
+
+    // Receipt Export/Import (harus sebelum apiResource agar tidak tertangkap {receipt})
+    Route::get('/receipts/export', [ReceiptController::class, 'export']);
+    Route::post('/receipts/import', [ReceiptController::class, 'import']);
+    Route::get('/receipts/import-template', [ReceiptController::class, 'importTemplate']);
 
     // Receipts CRUD
     Route::apiResource('receipts', ReceiptController::class);

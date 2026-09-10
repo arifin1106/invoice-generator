@@ -60,6 +60,18 @@ export const invoiceApi = {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   },
+  exportXlsx:     (studentLevel) => api.get('/invoices/export', {
+    params: studentLevel ? { student_level: studentLevel } : {},
+    responseType: 'blob',
+  }),
+  downloadTemplate: () => api.get('/invoices/import-template', { responseType: 'blob' }),
+  importXlsx:     (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post('/invoices/import', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 export const settingApi = {
@@ -89,6 +101,15 @@ export const receiptApi = {
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
+  },
+  exportXlsx:     () => api.get('/receipts/export', { responseType: 'blob' }),
+  downloadTemplate: () => api.get('/receipts/import-template', { responseType: 'blob' }),
+  importXlsx:     (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post('/receipts/import', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
   },
 };
 
