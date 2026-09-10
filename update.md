@@ -25,3 +25,13 @@
 
 1. status pada invoice di semua tampilan (preview & pdf) dibuat sama ketika edit/buat.
 2. upload ttd lewat pengaturan harus masuk ke invoice (pdf) dan terlihat juga pada preview invoice.
+
+### update v6 — Keamanan
+
+1. Token API expire otomatis setelah 24 jam (`config/sanctum.php` → `SANCTUM_TOKEN_TTL_MINUTES=1440`).
+2. Rate limiting login: maks 5 percobaan/menit per IP + lockout per-email 15 menit setelah 5 kegagalan berturut-turut.
+3. Error PDF tidak lagi membocorkan path/line server ke client — hanya di-log secara internal (`Log::error`). Berlaku untuk invoice dan kwitansi.
+4. CORS dibatasi sesuai domain (`CORS_ALLOWED_ORIGINS` env). Frontend Vercel + localhost dev saja.
+5. Password profil minimum 8 karakter dengan huruf besar, huruf kecil, dan angka.
+6. Token expired/401 di frontend otomatis bersih & redirect ke halaman login (tidak lagi "gantung").
+7. Tombol "Logout Semua Perangkat" tersedia di profil — menghapus semua token aktif sekaligus.

@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react';
-import { X, Camera, Trash2, Loader2, Eye, EyeOff, Save } from 'lucide-react';
+import { X, Camera, Trash2, Loader2, Eye, EyeOff, Save, LogOut, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
 const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 export default function ProfileModal({ onClose }) {
-  const { user, token, login } = useAuth();
+  const { user, token } = useAuth();
 
   // Local state for forms
   const [name, setName]   = useState(user?.name || '');
@@ -110,6 +110,25 @@ export default function ProfileModal({ onClose }) {
       showFeedback('Gagal menghapus foto.', 'error');
     } finally {
       setPhotoLoading(false);
+    }
+  };
+
+  /* ── Logout semua perangkat ───────────────────── */
+  const handleLogoutAll = async () => {
+    if (!window.confirm('Anda akan keluar dari semua perangkat termasuk perangkat ini. Lanjutkan?')) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.post(`${apiBase}/logout-all`, {}, { headers });
+      showFeedback('Semua perangkat berhasil logout. Silakan login kembali.');
+      setTimeout(() => {
+        localStorage.removeItem('auth_token');
+        window.location.href = '/login';
+      }, 1200);
+    } catch (err) {
+      showFeedback(err.response?.data?.message || 'Gagal logout semua perangkat.', 'error');
+      setLoading(false);
     }
   };
 
@@ -238,6 +257,7 @@ export default function ProfileModal({ onClose }) {
                     {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                <p className="profile-photo-hint">Min. 8 karakter dengan huruf besar, huruf kecil, dan angka.</p>
               </div>
               <div className="form-group">
                 <label className="form-label">Konfirmasi Password Baru</label>
@@ -259,6 +279,26 @@ export default function ProfileModal({ onClose }) {
                 <span>Ubah Password</span>
               </button>
             </form>
+          </section>
+
+          {/* ── Keamanan / Sesi ─────────────────────── */}
+          <section className="profile-section">
+            <h3 className="profile-section-title">Keamanan</h3>
+            <div className="profile-security">
+              <div className="profile-security-info">
+                <ShieldCheck size={18} />
+                <span>Keluar dari semua perangkat yang pernah login.</span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                onClick={handleLogoutAll}
+                disabled={loading}
+              >
+                {loading ? <Loader2 size={15} className="spin-icon" /> : <LogOut size={15} />}
+                <span>Logout Semua Perangkat</span>
+              </button>
+            </div>
           </section>
 
         </div>

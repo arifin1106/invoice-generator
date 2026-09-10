@@ -141,10 +141,23 @@ class ReceiptController extends Controller
      */
     public function downloadPdf(Receipt $receipt)
     {
-        $pdf = Pdf::loadView('receipts.pdf', compact('receipt'));
-        $pdf->setPaper('A4', 'landscape'); // Kwitansi usually half A4 or landscape
-        
-        return $pdf->download('Kwitansi-' . str_replace('/', '-', $receipt->receipt_number) . '.pdf');
+        try {
+            $pdf = Pdf::loadView('receipts.pdf', compact('receipt'));
+            $pdf->setPaper('A4', 'landscape'); // Kwitansi usually half A4 or landscape
+            
+            return $pdf->download('Kwitansi-' . str_replace('/', '-', $receipt->receipt_number) . '.pdf');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal generate PDF kwitansi', [
+                'receipt_id' => $receipt->id,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'message' => 'Gagal membuat PDF kwitansi. Silakan coba lagi atau hubungi admin.',
+            ], 500);
+        }
     }
 
     /**

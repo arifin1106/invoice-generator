@@ -476,6 +476,29 @@ body::before {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
+/* Security / Logout all devices */
+.profile-security {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #fff1f1 0%, #fef2f2 100%);
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+}
+.profile-security-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.5;
+  flex: 1;
+}
+.profile-security .btn {
+  flex-shrink: 0;
+}
 
 /* Photo area */
 .profile-photo-area {

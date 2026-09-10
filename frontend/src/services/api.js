@@ -20,6 +20,17 @@ api.interceptors.response.use(
   (error) => {
     const message =
       error.response?.data?.message || 'Terjadi kesalahan. Coba lagi.';
+
+    const status = error.response?.status;
+    const url    = error.config?.url || '';
+
+    if (status === 401 && !url.endsWith('/login')) {
+      localStorage.removeItem('auth_token');
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
+    }
+
     console.error('API Error:', message);
     return Promise.reject(error);
   }

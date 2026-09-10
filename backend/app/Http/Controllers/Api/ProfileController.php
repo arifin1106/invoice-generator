@@ -33,7 +33,7 @@ class ProfileController extends Controller
         // Only validate password fields if provided
         if ($request->filled('new_password')) {
             $rules['current_password'] = 'required';
-            $rules['new_password']     = ['required', 'confirmed', Password::min(6)];
+            $rules['new_password']     = ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()];
         }
 
         $validated = $request->validate($rules);

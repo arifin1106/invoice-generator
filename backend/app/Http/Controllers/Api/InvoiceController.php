@@ -267,10 +267,15 @@ class InvoiceController extends Controller
 
             return response()->download($cacheFile, $filename, ['Content-Type' => 'application/pdf']);
         } catch (\Throwable $e) {
-            return response()->json([
-                'message' => 'PDF Error: '.$e->getMessage(),
+            \Illuminate\Support\Facades\Log::error('Gagal generate PDF invoice', [
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'message' => 'Gagal membuat PDF invoice. Silakan coba lagi atau hubungi admin.',
             ], 500);
         }
     }
