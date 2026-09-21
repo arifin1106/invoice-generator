@@ -18,8 +18,8 @@ export const computeItemStatus = (item = {}) => {
     )
   );
 
+  if (finalAmount <= 0 || paid >= finalAmount) return 'Lunas';
   if (paid <= 0) return 'Belum Lunas';
-  if (paid >= finalAmount) return 'Lunas';
   return 'Sebagian';
 };
 

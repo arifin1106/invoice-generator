@@ -40,3 +40,7 @@
 
 1. Penambahan fitur export pada semua invoice dan kwitansi agar bisa backup data invoice yang sudah di buat dalam sistem.
 2. penambahan fitur import juga pada invoice dan kwitansi untuk mempermudah saat migrasi data.
+
+### update v8 - Status pembayran ketikda diskon 100%
+
+1. Status pembayaran pada invoice otomatis dibuat lunas ketika diskon diatur 100%, karna saat ini ketika diskon 100% status masih belum lunas.

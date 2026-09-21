@@ -313,7 +313,7 @@ body {
           -
         @endif
       </td>
-      <td class="cs">{{ $itemPaid <= 0 ? 'Belum Lunas' : ($itemPaid >= $itemFinal ? 'Lunas' : 'Sebagian') }}</td>
+      <td class="cs">{{ $itemFinal <= 0 ? 'Lunas' : ($itemPaid <= 0 ? 'Belum Lunas' : ($itemPaid >= $itemFinal ? 'Lunas' : 'Sebagian')) }}</td>
     </tr>
     @endforeach
   </tbody>

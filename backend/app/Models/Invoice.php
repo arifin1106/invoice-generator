@@ -81,10 +81,10 @@ class Invoice extends Model
                     $totalPaid += $paidAmount;
                     $totalFinal += $finalAmount;
 
-                    if ($paidAmount <= 0) {
-                        $item->status = 'Belum Lunas';
-                    } elseif ($paidAmount >= $finalAmount) {
+                    if ($finalAmount <= 0 || $paidAmount >= $finalAmount) {
                         $item->status = 'Lunas';
+                    } elseif ($paidAmount <= 0) {
+                        $item->status = 'Belum Lunas';
                     } else {
                         $item->status = 'Sebagian';
                     }
@@ -99,7 +99,7 @@ class Invoice extends Model
                 $invoice->remaining_balance = $invoice->total_amount - $invoice->amount_received;
             }
 
-            if ($invoice->remaining_balance <= 0 && $invoice->amount_received > 0) {
+            if ($invoice->remaining_balance <= 0) {
                 $invoice->status = 'paid';
             } elseif ($invoice->amount_received > 0) {
                 $invoice->status = 'partial';
