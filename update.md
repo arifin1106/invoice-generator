@@ -44,3 +44,8 @@
 ### update v8 - Status pembayran ketikda diskon 100%
 
 1. Status pembayaran pada invoice otomatis dibuat lunas ketika diskon diatur 100%, karna saat ini ketika diskon 100% status masih belum lunas.
+
+### update v9 - Kwitansi
+
+1. Ketika buat kwitansi baru, button simpan kwitansi tidak ada respon apa-apa, sehingga ketika klik simpan kwitansi tidak tersimpan kwitansi baru ke halaman list kwitansi.
+2. tambahkan toast massage untuk memberitahukan bahwa kwitansi berhasil disimpan, atau gagal disimpan. hal ini berlaku juga untuk halaman edit kwitansi.

@@ -11,6 +11,7 @@ export default function ReceiptForm() {
   const qc = useQueryClient();
   const isEdit = Boolean(id);
 
+  const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
     receipt_number: '',
     date: new Date().toISOString().split('T')[0],
@@ -29,6 +30,7 @@ export default function ReceiptForm() {
   const generateNumMutation = useMutation({
     mutationFn: () => receiptApi.generateNumber().then(r => r.data),
     onSuccess: (data) => setFormData(p => ({ ...p, receipt_number: data.receipt_number })),
+    onError: () => showToast('Gagal generate nomor kwitansi.', 'error'),
   });
 
   useEffect(() => {
@@ -51,9 +53,23 @@ export default function ReceiptForm() {
     mutationFn: (data) => isEdit ? receiptApi.update(id, data) : receiptApi.create(data),
     onSuccess: () => {
       qc.invalidateQueries(['receipts']);
+      showToast(isEdit ? 'Kwitansi berhasil diupdate!' : 'Kwitansi berhasil disimpan!', 'success');
       navigate('/receipts');
     },
+    onError: (err) => {
+      let msg = err.response?.data?.message ?? 'Gagal menyimpan kwitansi.';
+      if (err.response?.data?.errors) {
+        const firstError = Object.values(err.response.data.errors)[0][0];
+        if (firstError) msg = firstError;
+      }
+      showToast(msg, 'error');
+    },
   });
+
+  const showToast = (msg, type) => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -64,6 +80,10 @@ export default function ReceiptForm() {
 
   return (
     <div className="page">
+      {toast && (
+        <div className={`toast toast--${toast.type}`}>{toast.msg}</div>
+      )}
+
       <div className="page-header" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
         <Link to="/receipts" className="btn btn-ghost" style={{ padding: '8px' }}>
           <ArrowLeft size={20} />

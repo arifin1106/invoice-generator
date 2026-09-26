@@ -6,11 +6,12 @@ use App\Exports\ReceiptExport;
 use App\Http\Controllers\Controller;
 use App\Imports\ReceiptImport;
 use App\Models\Receipt;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\Rule;
 
 class ReceiptController extends Controller
 {
@@ -29,17 +30,17 @@ class ReceiptController extends Controller
 
         if ($request->filled('search')) {
             $search = strtolower($request->search);
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(receipt_number) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(received_from) LIKE ?', ["%{$search}%"]);
+                    ->orWhereRaw('LOWER(received_from) LIKE ?', ["%{$search}%"]);
             });
         }
 
         $receipts = $query->orderBy('date', 'desc')
-                          ->orderBy('id', 'desc')
-                          ->paginate(10);
+            ->orderBy('id', 'desc')
+            ->paginate(10);
 
-        // Get total stats (independent of pagination and search/category filters if we want overall stats, 
+        // Get total stats (independent of pagination and search/category filters if we want overall stats,
         // but maybe we just get overall stats)
         $totalKwitansi = Receipt::count();
         $totalSeragam = Receipt::where('payment_category', 'Seragam Sekolah')->count();
@@ -65,7 +66,7 @@ class ReceiptController extends Controller
                 'seragam' => $totalSeragam,
                 'cathering' => $totalCathering,
                 'jemputan' => $totalJemputan,
-            ]
+            ],
         ]);
     }
 
@@ -77,13 +78,13 @@ class ReceiptController extends Controller
         $validated = $this->validateReceipt($request);
 
         // Auto generate amount in words if not provided or to ensure accuracy
-        $validated['amount_in_words'] = $this->terbilang($validated['amount']) . ' Rupiah';
+        $validated['amount_in_words'] = $this->terbilang($validated['amount']).' Rupiah';
 
         $receipt = Receipt::create($validated);
 
         return response()->json([
             'message' => 'Kwitansi berhasil dibuat.',
-            'data'    => $receipt
+            'data' => $receipt,
         ], 201);
     }
 
@@ -102,13 +103,13 @@ class ReceiptController extends Controller
     {
         $validated = $this->validateReceipt($request, $receipt->id);
 
-        $validated['amount_in_words'] = $this->terbilang($validated['amount']) . ' Rupiah';
+        $validated['amount_in_words'] = $this->terbilang($validated['amount']).' Rupiah';
 
         $receipt->update($validated);
 
         return response()->json([
             'message' => 'Kwitansi berhasil diupdate.',
-            'data'    => $receipt
+            'data' => $receipt,
         ]);
     }
 
@@ -120,7 +121,7 @@ class ReceiptController extends Controller
         $receipt->delete();
 
         return response()->json([
-            'message' => 'Kwitansi berhasil dihapus.'
+            'message' => 'Kwitansi berhasil dihapus.',
         ]);
     }
 
@@ -130,10 +131,10 @@ class ReceiptController extends Controller
     public function generateNumber()
     {
         $lastReceipt = Receipt::orderBy('id', 'desc')->first();
-        
+
         $nextId = $lastReceipt ? $lastReceipt->id + 1 : 1;
-        
-        $number = 'KWT-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+
+        $number = 'KWT-'.date('Ymd').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
         return response()->json(['receipt_number' => $number]);
     }
@@ -146,10 +147,10 @@ class ReceiptController extends Controller
         try {
             $pdf = Pdf::loadView('receipts.pdf', compact('receipt'));
             $pdf->setPaper('A4', 'landscape'); // Kwitansi usually half A4 or landscape
-            
-            return $pdf->download('Kwitansi-' . str_replace('/', '-', $receipt->receipt_number) . '.pdf');
+
+            return $pdf->download('Kwitansi-'.str_replace('/', '-', $receipt->receipt_number).'.pdf');
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Gagal generate PDF kwitansi', [
+            Log::error('Gagal generate PDF kwitansi', [
                 'receipt_id' => $receipt->id,
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
@@ -170,7 +171,7 @@ class ReceiptController extends Controller
         $expiresAt = now()->addDays(self::SHARE_URL_DAYS);
 
         return response()->json([
-            'url'        => URL::temporarySignedRoute('public.receipts.pdf', $expiresAt, ['receipt' => $receipt->id]),
+            'url' => URL::temporarySignedRoute('public.receipts.pdf', $expiresAt, ['receipt' => $receipt->id]),
             'expires_at' => $expiresAt->toIso8601String(),
         ]);
     }
@@ -185,7 +186,7 @@ class ReceiptController extends Controller
 
     public function export()
     {
-        $export = new ReceiptExport();
+        $export = new ReceiptExport;
 
         return $export->download();
     }
@@ -197,14 +198,14 @@ class ReceiptController extends Controller
         ]);
 
         try {
-            $import = new ReceiptImport();
+            $import = new ReceiptImport;
             $import->import($request->file('file')->getRealPath());
 
             return response()->json([
-                'message'  => 'Import kwitansi selesai.',
+                'message' => 'Import kwitansi selesai.',
                 'imported' => $import->imported,
-                'skipped'  => $import->skipped,
-                'errors'   => $import->errors,
+                'skipped' => $import->skipped,
+                'errors' => $import->errors,
             ]);
         } catch (\Throwable $e) {
             Log::error('Gagal import kwitansi', ['error' => $e->getMessage()]);
@@ -226,12 +227,12 @@ class ReceiptController extends Controller
     private function validateReceipt(Request $request, $id = null)
     {
         return $request->validate([
-            'receipt_number'   => 'required|string|unique:receipts,receipt_number,' . $id,
-            'date'             => 'required|date',
-            'received_from'    => 'required|string|max:255',
-            'amount'           => 'required|numeric|min:0',
+            'receipt_number' => ['required', 'string', Rule::unique('receipts', 'receipt_number')->ignore($id)],
+            'date' => 'required|date',
+            'received_from' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
             'payment_category' => 'required|string',
-            'description'      => 'nullable|string',
+            'description' => 'nullable|string',
         ]);
     }
 
@@ -240,32 +241,31 @@ class ReceiptController extends Controller
      */
     private function terbilang($angka)
     {
-        $angka = abs((float)$angka);
-        $baca = array("", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas");
-        $terbilang = "";
+        $angka = abs((int) $angka);
+        $baca = ['', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh', 'Sebelas'];
 
         if ($angka < 12) {
-            $terbilang = " " . $baca[$angka];
-        } else if ($angka < 20) {
-            $terbilang = $this->terbilang($angka - 10) . " Belas";
-        } else if ($angka < 100) {
-            $terbilang = $this->terbilang($angka / 10) . " Puluh" . $this->terbilang($angka % 10);
-        } else if ($angka < 200) {
-            $terbilang = " Seratus" . $this->terbilang($angka - 100);
-        } else if ($angka < 1000) {
-            $terbilang = $this->terbilang($angka / 100) . " Ratus" . $this->terbilang($angka % 100);
-        } else if ($angka < 2000) {
-            $terbilang = " Seribu" . $this->terbilang($angka - 1000);
-        } else if ($angka < 1000000) {
-            $terbilang = $this->terbilang($angka / 1000) . " Ribu" . $this->terbilang($angka % 1000);
-        } else if ($angka < 1000000000) {
-            $terbilang = $this->terbilang($angka / 1000000) . " Juta" . $this->terbilang($angka % 1000000);
-        } else if ($angka < 1000000000000) {
-            $terbilang = $this->terbilang($angka / 1000000000) . " Milyar" . $this->terbilang(fmod($angka, 1000000000));
-        } else if ($angka < 1000000000000000) {
-            $terbilang = $this->terbilang($angka / 1000000000000) . " Trilyun" . $this->terbilang(fmod($angka, 1000000000000));
+            return $baca[$angka];
+        } elseif ($angka < 20) {
+            return $baca[$angka - 10].' Belas';
+        } elseif ($angka < 100) {
+            return trim($this->terbilang(intdiv($angka, 10)).' Puluh '.$this->terbilang($angka % 10));
+        } elseif ($angka < 200) {
+            return trim('Seratus '.$this->terbilang($angka - 100));
+        } elseif ($angka < 1000) {
+            return trim($this->terbilang(intdiv($angka, 100)).' Ratus '.$this->terbilang($angka % 100));
+        } elseif ($angka < 2000) {
+            return trim('Seribu '.$this->terbilang($angka - 1000));
+        } elseif ($angka < 1000000) {
+            return trim($this->terbilang(intdiv($angka, 1000)).' Ribu '.$this->terbilang($angka % 1000));
+        } elseif ($angka < 1000000000) {
+            return trim($this->terbilang(intdiv($angka, 1000000)).' Juta '.$this->terbilang($angka % 1000000));
+        } elseif ($angka < 1000000000000) {
+            return trim($this->terbilang(intdiv($angka, 1000000000)).' Milyar '.$this->terbilang($angka % 1000000000));
+        } elseif ($angka < 1000000000000000) {
+            return trim($this->terbilang(intdiv($angka, 1000000000000)).' Trilyun '.$this->terbilang($angka % 1000000000000));
         }
 
-        return trim($terbilang);
+        return '';
     }
 }
