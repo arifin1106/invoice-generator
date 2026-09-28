@@ -1,7 +1,21 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { GraduationCap, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
+
+function getLoginErrorMessage(err) {
+  // Pesan dari backend (termasuk lockout 5x gagal) tetap diprioritaskan
+  const serverMessage = err.response?.data?.message;
+  if (serverMessage) return serverMessage;
+
+  if (!err.response) {
+    return 'Tidak bisa terhubung ke server. Periksa koneksi internet, lalu coba lagi.';
+  }
+  if (err.response.status === 429) {
+    return 'Terlalu banyak percobaan masuk. Tunggu beberapa menit, lalu coba lagi.';
+  }
+  return 'Email atau password salah. Periksa lagi, lalu coba masuk.';
+}
 
 export default function Login() {
   const { login, user } = useAuth();
@@ -19,66 +33,107 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
     try {
       await login(email, password);
     } catch (err) {
-      setError(err.response?.data?.message || 'Login gagal. Silakan periksa kembali email dan password Anda.');
+      setError(getLoginErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
+  const hasError = Boolean(error);
+
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <div className="login-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-          <img src="/logo.png" alt="JCoS Logo" style={{ width: '80px', height: 'auto', objectFit: 'contain', marginBottom: '1rem' }} />
-          <h1 className="login-title">JACOS Invoice</h1>
-          <p className="login-subtitle">Silakan login untuk mengakses sistem</p>
+    <main className="auth-page">
+      <div className="auth-stack">
+        {/* Dua map di belakang: Invoice & Kwitansi (dekoratif) */}
+        <div className="auth-sheet auth-sheet--receipt" aria-hidden="true">
+          <span className="auth-sheet-tab">Kwitansi</span>
+        </div>
+        <div className="auth-sheet auth-sheet--invoice" aria-hidden="true">
+          <span className="auth-sheet-tab">Invoice</span>
         </div>
 
-        {error && <div className="toast toast--error mb-4" style={{ position: 'relative', top: 0, right: 0 }}>{error}</div>}
+        <section className="auth-card" aria-labelledby="auth-title">
+          <div className="auth-tab">
+            <img src="/logo.png" alt="" className="auth-tab-logo" />
+            JACOS Invoice
+          </div>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label className="form-label">Email</label>
-            <input 
-              type="email" 
-              className="form-input" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required 
-              placeholder="example@mail.com"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <div className="input-password-wrap">
-              <input 
-                type={showPassword ? 'text' : 'password'}
-                className="form-input" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required 
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                className="input-eye"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+          <h1 id="auth-title" className="auth-title">Masuk</h1>
+          <p className="auth-subtitle">Gunakan email dan password akun Anda.</p>
+
+          {hasError && (
+            <div id="auth-error" className="auth-alert" role="alert">
+              <AlertCircle size={18} aria-hidden="true" />
+              <span>{error}</span>
             </div>
-          </div>
-          
-          <button type="submit" className="btn btn-primary btn-full mt-2" disabled={loading}>
-            {loading ? <Loader2 size={18} className="spin-icon" /> : 'Masuk'}
-          </button>
-        </form>
+          )}
+
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="form-group">
+              <label className="form-label" htmlFor="login-email">Email</label>
+              <input
+                id="login-email"
+                type="email"
+                className="form-input"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); if (hasError) setError(''); }}
+                required
+                autoComplete="username"
+                autoFocus
+                placeholder="nama@email.com"
+                aria-invalid={hasError}
+                aria-describedby={hasError ? 'auth-error' : undefined}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="login-password">Password</label>
+              <div className="input-password-wrap">
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="form-input"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); if (hasError) setError(''); }}
+                  required
+                  autoComplete="current-password"
+                  placeholder="Masukkan password"
+                  aria-invalid={hasError}
+                  aria-describedby={hasError ? 'auth-error' : undefined}
+                />
+                <button
+                  type="button"
+                  className="input-eye"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary auth-submit"
+              disabled={loading}
+              aria-busy={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="spin-icon" aria-hidden="true" />
+                  Memproses…
+                </>
+              ) : (
+                'Masuk'
+              )}
+            </button>
+          </form>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
