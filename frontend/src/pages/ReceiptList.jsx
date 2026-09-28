@@ -4,11 +4,26 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { receiptApi } from '../services/api';
 import { formatRupiah, formatDate } from '../utils/format';
 import useDebounce from '../hooks/useDebounce';
+import SelectMenu from '../components/SelectMenu';
 import {
   Search, Eye, Pencil, Trash2, FileDown, PlusCircle,
   Receipt, FileText, CheckCircle, Shirt, Utensils, Bus,
   Download, Upload, X, FileSpreadsheet, Loader2, AlertCircle,
 } from 'lucide-react';
+
+const CATEGORY_OPTIONS = [
+  { value: '',                  label: 'Semua Kategori' },
+  { value: 'Seragam Sekolah',   label: 'Seragam Sekolah' },
+  { value: 'Cathering Makanan', label: 'Cathering Makanan' },
+  { value: 'Jemputan Sekolah',  label: 'Jemputan Sekolah' },
+  { value: 'Lainnya',           label: 'Lainnya' },
+];
+
+const CATEGORY_BADGE = {
+  'Seragam Sekolah':   'badge-cat--seragam',
+  'Cathering Makanan': 'badge-cat--cathering',
+  'Jemputan Sekolah':  'badge-cat--jemputan',
+};
 
 export default function ReceiptList() {
   const navigate = useNavigate();
@@ -139,11 +154,11 @@ export default function ReceiptList() {
         ].map(({ icon: Icon, color, value, label }) => (
           <div key={label} className="stat-card">
             <div className={`stat-icon stat-icon--${color}`}>
-              <Icon size={24} />
+              <Icon size={20} />
             </div>
             <div className="stat-info">
-              <div className="stat-label">{label}</div>
               <div className="stat-value">{value}</div>
+              <div className="stat-label">{label}</div>
             </div>
           </div>
         ))}
@@ -162,20 +177,15 @@ export default function ReceiptList() {
           />
         </div>
         
-        <select
-          className="filter-select"
+        <SelectMenu
+          label="Filter kategori"
+          align="right"
           value={category}
-          onChange={(e) => { setCategory(e.target.value); setPage(1); }}
-        >
-          <option value="">Semua Kategori</option>
-          <option value="Seragam Sekolah">Seragam Sekolah</option>
-          <option value="Cathering Makanan">Cathering Makanan</option>
-          <option value="Jemputan Sekolah">Jemputan Sekolah</option>
-          <option value="Lainnya">Lainnya</option>
-        </select>
+          onChange={(v) => { setCategory(v); setPage(1); }}
+          options={CATEGORY_OPTIONS}
+        />
       </div>
 
-      {/* Table */}
       {/* Table */}
       <div className="table-card" style={{ opacity: isFetching ? 0.6 : 1, transition: 'opacity 0.2s' }}>
         <div className="table-responsive">
@@ -186,8 +196,23 @@ export default function ReceiptList() {
             </div>
           ) : receipts.length === 0 ? (
             <div className="table-empty">
-              <FileText size={48} className="empty-icon" />
-              <p>Belum ada data kwitansi. <span className="link" onClick={() => navigate('/receipts/new')}>Buat sekarang</span></p>
+              <Receipt size={48} className="empty-icon" />
+              {debouncedSearch || category ? (
+                <>
+                  <p>Tidak ada kwitansi yang cocok dengan pencarian atau filter.</p>
+                  <button className="btn btn-secondary btn-sm" onClick={() => { setSearch(''); setCategory(''); setPage(1); }}>
+                    Reset pencarian
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p>Belum ada data kwitansi.</p>
+                  <Link to="/receipts/new" className="btn btn-primary btn-sm">
+                    <PlusCircle size={15} />
+                    <span>Buat Kwitansi</span>
+                  </Link>
+                </>
+              )}
             </div>
           ) : (
             <table className="data-table">
@@ -203,15 +228,7 @@ export default function ReceiptList() {
               </thead>
               <tbody>
                 {receipts.map((r) => {
-                  let badgeColor = 'rgba(12, 113, 181, 0.10)';
-                  let textColor = '#0c71b5';
-                  if (r.payment_category === 'Seragam Sekolah') {
-                    badgeColor = 'rgba(124, 58, 237, 0.10)'; textColor = '#7c3aed';
-                  } else if (r.payment_category === 'Cathering Makanan') {
-                    badgeColor = 'rgba(217, 119, 6, 0.10)'; textColor = '#d97706';
-                  } else if (r.payment_category === 'Jemputan Sekolah') {
-                    badgeColor = 'rgba(22, 163, 74, 0.10)'; textColor = '#16a34a';
-                  }
+                  const catClass = CATEGORY_BADGE[r.payment_category] || 'badge-cat--lainnya';
 
                   return (
                     <tr key={r.id}>
@@ -219,17 +236,17 @@ export default function ReceiptList() {
                       <td data-label="Tanggal">{formatDate(r.date)}</td>
                       <td className="font-medium" data-label="Diterima Dari">{r.received_from}</td>
                       <td className="text-center" data-label="Kategori">
-                        <span className="badge" style={{ background: badgeColor, color: textColor, border: `1px solid ${textColor}40` }}>
+                        <span className={`badge ${catClass}`}>
                           {r.payment_category || 'Lainnya'}
                         </span>
                       </td>
                       <td className="text-right font-medium" data-label="Nominal">{formatRupiah(r.amount)}</td>
                       <td className="text-center" data-label="Aksi">
                         <div className="action-btns">
-                          <button className="action-btn action-btn--view" title="Preview" onClick={() => navigate(`/receipts/${r.id}/preview`)}><Eye size={15} /></button>
-                          <button className="action-btn action-btn--edit" title="Edit" onClick={() => navigate(`/receipts/${r.id}/edit`)}><Pencil size={15} /></button>
-                          <button className="action-btn action-btn--download" title="Download PDF" onClick={() => receiptApi.downloadPdf(r.id, r.receipt_number)}><FileDown size={15} /></button>
-                          <button className="action-btn action-btn--delete" title="Hapus" onClick={() => setDeleteId(r.id)}><Trash2 size={15} /></button>
+                          <button className="action-btn action-btn--view" title="Preview" aria-label={`Preview kwitansi ${r.receipt_number}`} onClick={() => navigate(`/receipts/${r.id}/preview`)}><Eye size={15} /></button>
+                          <button className="action-btn action-btn--edit" title="Edit" aria-label={`Edit kwitansi ${r.receipt_number}`} onClick={() => navigate(`/receipts/${r.id}/edit`)}><Pencil size={15} /></button>
+                          <button className="action-btn action-btn--download" title="Download PDF" aria-label={`Download PDF kwitansi ${r.receipt_number}`} onClick={() => receiptApi.downloadPdf(r.id, r.receipt_number)}><FileDown size={15} /></button>
+                          <button className="action-btn action-btn--delete" title="Hapus" aria-label={`Hapus kwitansi ${r.receipt_number}`} onClick={() => setDeleteId(r.id)}><Trash2 size={15} /></button>
                         </div>
                       </td>
                     </tr>
@@ -275,9 +292,9 @@ export default function ReceiptList() {
               <button
                 className="btn btn-danger"
                 onClick={() => deleteMutation.mutate(deleteId)}
-                disabled={deleteMutation.isLoading}
+                disabled={deleteMutation.isPending}
               >
-                {deleteMutation.isLoading ? 'Menghapus...' : 'Hapus'}
+                {deleteMutation.isPending ? 'Menghapus...' : 'Hapus'}
               </button>
             </div>
           </div>

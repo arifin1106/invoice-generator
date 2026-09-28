@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { invoiceApi } from '../services/api';
 import { formatRupiah, formatDate, statusConfig } from '../utils/format';
 import useDebounce from '../hooks/useDebounce';
+import SelectMenu from '../components/SelectMenu';
 import {
   Search, Eye, Pencil, Trash2, FileDown,
   FileText, TrendingUp, AlertCircle, CheckCircle,
@@ -19,6 +20,13 @@ const CATEGORY_LABELS = {
   preschool: 'Preschool & Kindergarten',
   primary:   'Primary',
 };
+
+const STATUS_OPTIONS = [
+  { value: '',        label: 'Semua Status' },
+  { value: 'paid',    label: 'Lunas' },
+  { value: 'partial', label: 'Sebagian' },
+  { value: 'unpaid',  label: 'Belum Lunas' },
+];
 
 export default function InvoiceList({ category }) {
   const navigate = useNavigate();
@@ -168,12 +176,13 @@ export default function InvoiceList({ category }) {
             className="search-input"
           />
         </div>
-        <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="filter-select">
-          <option value="">Semua Status</option>
-          <option value="paid">Lunas</option>
-          <option value="partial">Sebagian</option>
-          <option value="unpaid">Belum Lunas</option>
-        </select>
+        <SelectMenu
+          label="Filter status"
+          align="right"
+          value={status}
+          onChange={(v) => { setStatus(v); setPage(1); }}
+          options={STATUS_OPTIONS}
+        />
       </div>
 
       {/* Table */}
