@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { invoiceApi } from '../services/api';
 import { formatRupiah } from '../utils/format';
 import {
-  FileText, TrendingUp, AlertCircle, CheckCircle,
+  FileText, TrendingUp, AlertCircle, CheckCircle, Folder, Receipt,
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis,
@@ -71,6 +72,24 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Menu utama — jalan pintas ke Invoice & Kwitansi */}
+      <div className="folder-grid">
+        <Link to="/invoices/preschool" className="folder-card folder-card--solid">
+          <div className="folder-card-icon"><Folder size={20} /></div>
+          <div className="folder-card-body">
+            <span className="folder-card-label">Invoice</span>
+            <span className="folder-card-meta">{stats.total} dokumen &middot; lihat semua</span>
+          </div>
+        </Link>
+        <Link to="/receipts" className="folder-card folder-card--tint">
+          <div className="folder-card-icon"><Receipt size={20} /></div>
+          <div className="folder-card-body">
+            <span className="folder-card-label">Kwitansi</span>
+            <span className="folder-card-meta">Kelola bukti pembayaran</span>
+          </div>
+        </Link>
+      </div>
+
       {/* Stats */}
       <div className="stats-grid">
         {[
@@ -78,9 +97,9 @@ export default function Dashboard() {
           { icon: CheckCircle, color: 'green',  value: stats.paid,                  label: 'Lunas' },
           { icon: AlertCircle, color: 'orange', value: stats.partial,               label: 'Sebagian' },
           { icon: AlertCircle, color: 'red',    value: stats.unpaid,                label: 'Belum Lunas' },
-          { icon: TrendingUp,  color: 'purple', value: formatRupiah(stats.revenue), label: 'Total Diterima' },
-        ].map(({ icon: Icon, color, value, label }) => (
-          <div key={label} className="stat-card">
+          { icon: TrendingUp,  color: 'purple', value: formatRupiah(stats.revenue), label: 'Total Diterima', highlight: true },
+        ].map(({ icon: Icon, color, value, label, highlight }) => (
+          <div key={label} className={`stat-card ${highlight ? 'stat-card--highlight' : ''}`}>
             <div className={`stat-icon stat-icon--${color}`}><Icon size={20} /></div>
             <div className="stat-info">
               <div className="stat-value">{value}</div>
