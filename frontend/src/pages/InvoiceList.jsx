@@ -80,7 +80,7 @@ export default function InvoiceList({ category }) {
   /* Download import template */
   const handleDownloadTemplate = async () => {
     try {
-      const res = await invoiceApi.downloadTemplate();
+      const res = await invoiceApi.downloadTemplate(studentLevel || undefined);
       const blob = new Blob([res.data], { type: res.headers['content-type'] });
       const url  = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -285,7 +285,7 @@ export default function InvoiceList({ category }) {
                   ) : (
                     <p>Klik untuk memilih file <strong>.xlsx</strong></p>
                   )}
-                  <p className="import-hint">Maks. 10 MB. Format sesuai template.</p>
+                  <p className="import-hint">Maks. 10 MB. 1 baris per invoice, kolom per kategori pembayaran.</p>
                   <input
                     ref={fileInputRef}
                     type="file"

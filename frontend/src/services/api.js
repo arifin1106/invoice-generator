@@ -64,7 +64,10 @@ export const invoiceApi = {
     params: studentLevel ? { student_level: studentLevel } : {},
     responseType: 'blob',
   }),
-  downloadTemplate: () => api.get('/invoices/import-template', { responseType: 'blob' }),
+  downloadTemplate: (studentLevel) => api.get('/invoices/import-template', {
+    params: studentLevel ? { student_level: studentLevel } : {},
+    responseType: 'blob',
+  }),
   importXlsx:     (file) => {
     const fd = new FormData();
     fd.append('file', file);
