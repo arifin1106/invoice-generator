@@ -1,12 +1,12 @@
 <?php
 
-use App\Http\Controllers\Api\InvoiceController;
-use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BankAccountController;
+use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\PaymentCategoryController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReceiptController;
-use App\Http\Controllers\Api\PaymentCategoryController;
-use App\Http\Controllers\Api\BankAccountController;
+use App\Http\Controllers\Api\SettingController;
 use Illuminate\Support\Facades\Route;
 
 // Public Auth routes
@@ -35,9 +35,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/settings', [SettingController::class, 'show']);
     Route::post('/settings', [SettingController::class, 'update']);
 
-    // Payment Categories (Biaya Default)
+    // Payment Categories (Katalog Harga)
     Route::get('/payment-categories', [PaymentCategoryController::class, 'index']);
     Route::put('/payment-categories', [PaymentCategoryController::class, 'update']);
+    Route::post('/payment-categories/groups', [PaymentCategoryController::class, 'storeGroup']);
+    Route::patch('/payment-categories/groups', [PaymentCategoryController::class, 'updateGroup']);
+    Route::delete('/payment-categories/groups', [PaymentCategoryController::class, 'destroyGroup']);
 
     // Bank Accounts (Rekening Bank per Kategori)
     Route::apiResource('bank-accounts', BankAccountController::class);
