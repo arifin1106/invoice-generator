@@ -270,7 +270,7 @@ class InvoiceController extends Controller
 
             return response()->download($cacheFile, $filename, ['Content-Type' => 'application/pdf']);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Gagal generate PDF invoice', [
+            Log::error('Gagal generate PDF invoice', [
                 'invoice_id' => $invoice->id,
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
@@ -334,15 +334,19 @@ class InvoiceController extends Controller
         ]);
 
         try {
-            $import = new InvoiceImport();
+            $import = new InvoiceImport;
             $import->import($request->file('file')->getRealPath());
 
             return response()->json([
                 'message' => 'Import invoice selesai.',
                 'imported' => $import->imported,
-                'skipped'  => $import->skipped,
-                'errors'   => $import->errors,
+                'skipped' => $import->skipped,
+                'errors' => $import->errors,
             ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Throwable $e) {
             Log::error('Gagal import invoice', ['error' => $e->getMessage()]);
 
@@ -352,9 +356,9 @@ class InvoiceController extends Controller
         }
     }
 
-    public function importTemplate()
+    public function importTemplate(Request $request)
     {
-        return InvoiceExport::template();
+        return InvoiceExport::template($request->get('student_level'));
     }
 
     private function resolveBankId(string $studentLevel): ?int
