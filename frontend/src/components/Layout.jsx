@@ -9,6 +9,7 @@ import {
   X,
   FileText,
   ChevronDown,
+  Tags,
 } from 'lucide-react';
 import Topbar from './Topbar';
 import ProfileModal from './ProfileModal';
@@ -23,6 +24,7 @@ const navGroups = [
       { to: '/invoices/primary',   label: 'Primary' },
     ],
   },
+  { to: '/catalog',   icon: Tags,     label: 'Katalog' },
   { to: '/receipts',  icon: Receipt,  label: 'Kwitansi' },
   { to: '/settings',  icon: Settings, label: 'Pengaturan' },
 ];

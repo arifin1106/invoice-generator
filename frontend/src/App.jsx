@@ -14,6 +14,7 @@ const InvoicePreview = lazy(() => import('./pages/InvoicePreview'));
 const ReceiptList   = lazy(() => import('./pages/ReceiptList'));
 const ReceiptForm   = lazy(() => import('./pages/ReceiptForm'));
 const ReceiptPreview = lazy(() => import('./pages/ReceiptPreview'));
+const Catalog       = lazy(() => import('./pages/Catalog'));
 const Settings      = lazy(() => import('./pages/Settings'));
 
 const queryClient = new QueryClient({
@@ -57,6 +58,7 @@ export default function App() {
                   <Route path="receipts/new" element={<ReceiptForm />} />
                   <Route path="receipts/:id/edit" element={<ReceiptForm />} />
                   <Route path="receipts/:id/preview" element={<ReceiptPreview />} />
+                  <Route path="catalog" element={<Catalog />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
               </Route>

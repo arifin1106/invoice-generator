@@ -117,8 +117,11 @@ export const receiptApi = {
 };
 
 export const paymentCategoryApi = {
-  list:   ()       => api.get('/payment-categories'),
-  update: (data)   => api.put('/payment-categories', data),
+  list:        ()       => api.get('/payment-categories'),
+  update:      (data)   => api.put('/payment-categories', data),
+  createGroup: (data)   => api.post('/payment-categories/groups', data),
+  updateGroup: (data)   => api.patch('/payment-categories/groups', data),
+  deleteGroup: (name)   => api.delete('/payment-categories/groups', { data: { name } }),
 };
 
 export const bankAccountApi = {

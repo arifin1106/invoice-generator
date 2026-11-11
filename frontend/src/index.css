@@ -1035,10 +1035,14 @@ body {
 .action-btn--edit     { background: var(--amber-bg);       color: var(--amber-strong); }
 .action-btn--download { background: var(--green-bg);       color: var(--green-strong); }
 .action-btn--delete   { background: var(--red-bg);         color: var(--red); }
+.action-btn--toggle   { background: var(--green-bg);       color: var(--green-strong); }
+.action-btn--toggle-off { background: var(--surface-3);    color: var(--text-muted); }
 .action-btn--view:hover     { background: rgba(12,113,181,0.18); }
 .action-btn--edit:hover     { background: rgba(217,119,6,0.18); }
 .action-btn--download:hover { background: rgba(22,163,74,0.18); }
 .action-btn--delete:hover   { background: rgba(220,38,38,0.18); }
+.action-btn--toggle:hover   { background: rgba(22,163,74,0.18); }
+.action-btn--toggle-off:hover { background: rgba(103,129,154,0.18); }
 
 /* ──────────────────────────────────────────────────────── */
 /*  BUTTONS                                                 */
@@ -1514,12 +1518,12 @@ body {
 .category-matrix-header,
 .category-matrix-row {
   display: grid;
-  grid-template-columns: minmax(130px, 1.2fr) repeat(5, minmax(118px, 1fr));
+  grid-template-columns: minmax(180px, 1.4fr) repeat(5, minmax(110px, 1fr)) 124px;
   gap: 8px;
   align-items: center;
 }
 .category-matrix-header {
-  min-width: 640px;
+  min-width: 940px;
   padding: 10px 14px;
   background: var(--surface-3);
   border-bottom: 1px solid var(--border);
@@ -1528,16 +1532,55 @@ body {
   color: var(--text-secondary);
 }
 .category-matrix-row {
-  min-width: 640px;
+  min-width: 940px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--border);
 }
 .category-matrix-row:last-child {
   border-bottom: none;
 }
+.category-matrix-row--inactive {
+  background: var(--surface-3);
+}
+.category-matrix-row--inactive .cat-mx-name-text {
+  color: var(--text-muted);
+}
 .cat-mx-name {
   font-size: 13px;
   font-weight: 500;
+}
+.cat-mx-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.cat-mx-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.catalog-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.catalog-badge--active {
+  background: var(--green-bg);
+  color: var(--green-strong);
+}
+.catalog-badge--inactive {
+  background: var(--red-bg);
+  color: var(--red);
+}
+.cat-mx-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
 }
 .cat-mx-level {
   font-size: 11px;
